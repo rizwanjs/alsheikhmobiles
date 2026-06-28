@@ -312,7 +312,7 @@ function App() {
             }`}
           >
             <span className="material-symbols-outlined">cable</span>
-            <span className="font-label-md text-label-md">Accessories & POS</span>
+            <span className="font-label-md text-label-md">Accessories</span>
           </button>
           
           <button 
@@ -597,7 +597,7 @@ function App() {
           }`}
         >
           <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: activeTab === 'accessories' ? "'FILL' 1" : "'FILL' 0" }}>cable</span>
-          <span className="text-[10px] font-semibold">POS</span>
+          <span className="text-[10px] font-semibold">Accessories</span>
         </button>
 
         <button
