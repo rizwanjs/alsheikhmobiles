@@ -1,15 +1,18 @@
 {
-  "experimentalServices": {
-    "frontend": {
+  "version": 2,
+  "builds": [
+    {
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
         "distDir": "dist"
       }
-    },
-    "backend": {
-      "src": "backend/server.js",
-      "use": "@vercel/node"
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/$1"
+    }
+  ]
 }
