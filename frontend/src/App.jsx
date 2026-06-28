@@ -10,6 +10,7 @@ import LedgerView from './components/LedgerView';
 import DashboardView from './components/DashboardView';
 import FilterPanel from './components/FilterPanel';
 import MobileDetailModal from './components/MobileDetailModal';
+import { API_URL } from './config';
 
 function App() {
   const [activeTab, setActiveTab] = useState('inventory'); // 'inventory' | 'ledger' | 'dashboard'
@@ -32,12 +33,12 @@ function App() {
 
   useEffect(() => {
     // Fetch from backend or fall back to demo data
-    axios.get('http://localhost:5000/api/mobiles')
+    axios.get(`${API_URL}/api/mobiles`)
       .then(res => setMobiles(res.data))
       .catch(() => generateDemoMobiles())
       .finally(() => setLoading(false));
 
-    axios.get('http://localhost:5000/api/customers')
+    axios.get(`${API_URL}/api/customers`)
       .then(res => setCustomers(res.data))
       .catch(() => generateDemoCustomers());
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

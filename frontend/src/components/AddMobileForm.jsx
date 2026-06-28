@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { API_URL } from '../config';
 
 const AddMobileForm = ({ onMobileAdded, customers, onClose }) => {
   const [formData, setFormData] = useState({
@@ -47,7 +48,7 @@ const AddMobileForm = ({ onMobileAdded, customers, onClose }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/mobiles', { ...formData, images });
+      const response = await axios.post(`${API_URL}/api/mobiles`, { ...formData, images });
       toast.success('Mobile added successfully!');
       // Backend now returns { mobile, person } (person = supplier ledger entry, or null for Cash).
       const { mobile, person } = response.data;

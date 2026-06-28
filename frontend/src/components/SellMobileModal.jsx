@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { API_URL } from '../config';
 
 const SellMobileModal = ({ mobile, customers, onClose, onSold }) => {
   const [formData, setFormData] = useState({
@@ -27,7 +28,7 @@ const SellMobileModal = ({ mobile, customers, onClose, onSold }) => {
 
     setLoading(true);
     try {
-      const response = await axios.put(`http://localhost:5000/api/mobiles/${mobile._id}/sell`, formData);
+      const response = await axios.put(`${API_URL}/api/mobiles/${mobile._id}/sell`, formData);
       toast.success('Mobile marked as sold!');
       // Backend now returns { mobile, person } (person = customer ledger entry, or null for Cash).
       const { mobile: soldMobile, person } = response.data;

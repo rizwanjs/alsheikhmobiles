@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { API_URL } from '../config';
 
 const LedgerView = ({ customers, searchQuery, onPayment, onAddPerson }) => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -40,7 +41,7 @@ const LedgerView = ({ customers, searchQuery, onPayment, onAddPerson }) => {
     const description = paymentDesc.trim() || defaultDesc;
 
     try {
-      const response = await axios.post(`http://localhost:5000/api/customers/${selectedCustomer._id}/payment`, {
+      const response = await axios.post(`${API_URL}/api/customers/${selectedCustomer._id}/payment`, {
         amount: amountNum,
         description: description,
         direction: direction
