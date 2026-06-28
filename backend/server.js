@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-const { connectDB, Mobile, Customer } = require('./db');
+const { connectDB, Mobile, Customer, Accessory, AccessorySale } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -187,6 +187,85 @@ app.post('/api/customers/:id/payment', async (req, res) => {
     
     await customer.save();
     res.json(customer);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// --- Accessories & POS ---
+
+app.get('/api/accessories', async (req, res) => {
+  try {
+    const accessories = await Accessory.find().sort({ createdAt: -1 });
+    res.json(accessories);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post('/api/accessories', async (req, res) => {
+  try {
+    const accessory = new Accessory(req.body);
+    await accessory.save();
+    res.status(201).json(accessory);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.put('/api/accessories/:id', async (req, res) => {
+  try {
+    const accessory = await Accessory.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!accessory) return res.status(404).json({ message: 'Accessory not found' });
+    res.json(accessory);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.post('/api/pos/checkout', async (req, res) => {
+  try {
+    const { items, totalAmount, soldTo, paymentType, buyerPhone } = req.body;
+    
+    // 1. Deduct stock for each item
+    for (const item of items) {
+      const acc = await Accessory.findById(item.accessoryId);
+      if (acc) {
+        acc.stock = Math.max(0, acc.stock - item.quantity);
+        await acc.save();
+      }
+    }
+
+    // 2. Create AccessorySale record
+    const sale = new AccessorySale({
+      items,
+      totalAmount: Number(totalAmount),
+      soldTo,
+      paymentType,
+      buyerPhone,
+      soldAt: new Date()
+    });
+    await sale.save();
+
+    let customer = null;
+
+    // 3. Ledger Logic for Udhaar
+    if (paymentType === 'Udhaar' && Number(totalAmount) > 0) {
+      customer = await Customer.findOne({ name: soldTo });
+      if (!customer) {
+        customer = new Customer({ name: soldTo, balance: 0, phone: buyerPhone || '' });
+      }
+      customer.balance += Number(totalAmount);
+      customer.transactions.push({
+        type: 'Purchase',
+        amount: Number(totalAmount),
+        description: `Bought Accessories (POS Sale #${sale._id.toString().slice(-6)}) on Udhaar`,
+        date: new Date()
+      });
+      await customer.save();
+    }
+
+    res.status(201).json({ sale, person: customer });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

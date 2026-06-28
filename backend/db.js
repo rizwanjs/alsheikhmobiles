@@ -5,7 +5,7 @@ const net = require('net');
 
 const DB_FILE = path.join(__dirname, 'db.json');
 let isMock = false;
-let mockData = { mobiles: [], customers: [] };
+let mockData = { mobiles: [], customers: [], accessories: [], accessorySales: [] };
 
 // Helper to check if a TCP port is open (to quickly check MongoDB availability)
 function checkConnection(uri) {
@@ -48,6 +48,8 @@ function loadMockData() {
       mockData = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
       if (!mockData.mobiles) mockData.mobiles = [];
       if (!mockData.customers) mockData.customers = [];
+      if (!mockData.accessories) mockData.accessories = [];
+      if (!mockData.accessorySales) mockData.accessorySales = [];
     } catch (e) {
       console.error('Error reading db.json, resetting database.', e);
     }
@@ -181,6 +183,76 @@ class CustomerModel extends MockModel {
   }
 }
 
+// Mock Accessory Model
+class AccessoryModel extends MockModel {
+  constructor(data) {
+    super('accessories', data);
+    if (this.stock === undefined) this.stock = 0;
+  }
+
+  static async find() {
+    const data = [...mockData.accessories];
+    return {
+      sort: (criteria) => {
+        if (criteria && criteria.createdAt === -1) {
+          data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+        return data;
+      },
+      then: (resolve) => resolve(data)
+    };
+  }
+
+  static async findByIdAndUpdate(id, updates, options) {
+    const list = mockData.accessories;
+    const index = list.findIndex(a => a._id === id);
+    if (index === -1) return null;
+
+    const item = { ...list[index], ...updates, updatedAt: new Date().toISOString() };
+    list[index] = item;
+    saveMockData();
+    return new AccessoryModel(item);
+  }
+
+  static async findById(id) {
+    const item = mockData.accessories.find(a => a._id === id);
+    return item ? new AccessoryModel(item) : null;
+  }
+
+  static async deleteMany() {
+    mockData.accessories = [];
+    saveMockData();
+    return { deletedCount: 0 };
+  }
+}
+
+// Mock AccessorySale Model
+class AccessorySaleModel extends MockModel {
+  constructor(data) {
+    super('accessorySales', data);
+    if (!this.soldAt) this.soldAt = new Date().toISOString();
+  }
+
+  static async find() {
+    const data = [...mockData.accessorySales];
+    return {
+      sort: (criteria) => {
+        if (criteria && criteria.createdAt === -1) {
+          data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+        return data;
+      },
+      then: (resolve) => resolve(data)
+    };
+  }
+
+  static async deleteMany() {
+    mockData.accessorySales = [];
+    saveMockData();
+    return { deletedCount: 0 };
+  }
+}
+
 // Connect function to switch mode
 async function connectDB(uri) {
   const isMongoAlive = await checkConnection(uri);
@@ -204,6 +276,8 @@ async function connectDB(uri) {
 // Real Mongoose schemas (deferred resolution)
 const RealMobile = require('./models/Mobile');
 const RealCustomer = require('./models/Customer');
+const RealAccessory = require('./models/Accessory');
+const RealAccessorySale = require('./models/AccessorySale');
 
 class Mobile {
   constructor(data) {
@@ -264,8 +338,60 @@ class Customer {
     return isMock ? CustomerModel.deleteMany(...args) : RealCustomer.deleteMany(...args);
   }
 
-  static insertMany(...args) {
+  static async insertMany(...args) {
     return isMock ? CustomerModel.insertMany(...args) : RealCustomer.insertMany(...args);
+  }
+}
+
+class Accessory {
+  constructor(data) {
+    if (isMock) {
+      return new AccessoryModel(data);
+    } else {
+      return new RealAccessory(data);
+    }
+  }
+
+  static find(...args) {
+    return isMock ? AccessoryModel.find(...args) : RealAccessory.find(...args);
+  }
+
+  static findById(...args) {
+    return isMock ? AccessoryModel.findById(...args) : RealAccessory.findById(...args);
+  }
+
+  static findByIdAndUpdate(...args) {
+    return isMock ? AccessoryModel.findByIdAndUpdate(...args) : RealAccessory.findByIdAndUpdate(...args);
+  }
+
+  static deleteMany(...args) {
+    return isMock ? AccessoryModel.deleteMany(...args) : RealAccessory.deleteMany(...args);
+  }
+
+  static insertMany(...args) {
+    return isMock ? AccessoryModel.insertMany(...args) : RealAccessory.insertMany(...args);
+  }
+}
+
+class AccessorySale {
+  constructor(data) {
+    if (isMock) {
+      return new AccessorySaleModel(data);
+    } else {
+      return new RealAccessorySale(data);
+    }
+  }
+
+  static find(...args) {
+    return isMock ? AccessorySaleModel.find(...args) : RealAccessorySale.find(...args);
+  }
+
+  static deleteMany(...args) {
+    return isMock ? AccessorySaleModel.deleteMany(...args) : RealAccessorySale.deleteMany(...args);
+  }
+
+  static insertMany(...args) {
+    return isMock ? AccessorySaleModel.insertMany(...args) : RealAccessorySale.insertMany(...args);
   }
 }
 
@@ -291,6 +417,8 @@ module.exports = {
   connectDB,
   Mobile,
   Customer,
+  Accessory,
+  AccessorySale,
   connection,
   isMockDatabase: () => isMock
 };

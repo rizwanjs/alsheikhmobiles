@@ -10,6 +10,7 @@ import LedgerView from './components/LedgerView';
 import DashboardView from './components/DashboardView';
 import FilterPanel from './components/FilterPanel';
 import MobileDetailModal from './components/MobileDetailModal';
+import AccessoriesPOS from './components/AccessoriesPOS';
 import { API_URL } from './config';
 
 function App() {
@@ -301,6 +302,18 @@ function App() {
             <span className="material-symbols-outlined">menu_book</span>
             <span className="font-label-md text-label-md">Ledger</span>
           </button>
+
+          <button 
+            onClick={() => setActiveTab('accessories')}
+            className={`w-full flex items-center gap-md px-lg py-md transition-all duration-200 text-left border-r-4 outline-none cursor-pointer ${
+              activeTab === 'accessories' 
+                ? 'bg-primary-container/20 text-primary border-primary active-nav-glow' 
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-white/5 border-transparent'
+            }`}
+          >
+            <span className="material-symbols-outlined">cable</span>
+            <span className="font-label-md text-label-md">Accessories & POS</span>
+          </button>
           
           <button 
             onClick={() => setActiveTab('dashboard')}
@@ -424,6 +437,18 @@ function App() {
                 }}
                 onAddPerson={(newPerson) => {
                   setCustomers([newPerson, ...customers]);
+                }}
+              />
+            </div>
+          ) : activeTab === 'accessories' ? (
+            <div className="h-full overflow-hidden">
+              <AccessoriesPOS 
+                customers={customers}
+                onAddPerson={(newPerson) => {
+                  setCustomers([newPerson, ...customers]);
+                }}
+                onPayment={(updatedCustomer) => {
+                  setCustomers(customers.map(c => c._id === updatedCustomer._id ? updatedCustomer : c));
                 }}
               />
             </div>
@@ -563,6 +588,16 @@ function App() {
             <span className="material-symbols-outlined text-on-primary text-[28px]">add</span>
           </div>
           <span className="text-[10px] font-semibold text-primary mt-0.5">Add</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('accessories')}
+          className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all cursor-pointer ${
+            activeTab === 'accessories' ? 'text-primary' : 'text-on-surface-variant'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: activeTab === 'accessories' ? "'FILL' 1" : "'FILL' 0" }}>cable</span>
+          <span className="text-[10px] font-semibold">POS</span>
         </button>
 
         <button
