@@ -225,7 +225,7 @@ app.put('/api/accessories/:id', async (req, res) => {
 
 app.post('/api/pos/checkout', async (req, res) => {
   try {
-    const { items, totalAmount, soldTo, paymentType, buyerPhone } = req.body;
+    const { items, totalAmount, soldTo, paymentType, buyerPhone, discount, discountType } = req.body;
     
     // 1. Deduct stock for each item
     for (const item of items) {
@@ -240,6 +240,8 @@ app.post('/api/pos/checkout', async (req, res) => {
     const sale = new AccessorySale({
       items,
       totalAmount: Number(totalAmount),
+      discount: Number(discount) || 0,
+      discountType: discountType || 'Flat',
       soldTo,
       paymentType,
       buyerPhone,

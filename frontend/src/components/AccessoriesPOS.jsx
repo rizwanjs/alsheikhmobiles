@@ -33,6 +33,8 @@ const AccessoriesPOS = ({ customers, onAddPerson, onPayment }) => {
     paymentType: 'Cash',
     buyerPhone: ''
   });
+  const [discount, setDiscount] = useState('');
+  const [discountType, setDiscountType] = useState('Flat'); // 'Flat' | 'Percentage'
   const [processingCheckout, setProcessingCheckout] = useState(false);
 
   // Fetch accessories
@@ -111,6 +113,17 @@ const AccessoriesPOS = ({ customers, onAddPerson, onPayment }) => {
     return cart.reduce((acc, item) => acc + (item.sellingPrice * item.quantity), 0);
   }, [cart]);
 
+  const finalTotal = useMemo(() => {
+    const subtotal = cartTotal;
+    const discVal = Number(discount) || 0;
+    if (discVal <= 0) return subtotal;
+    if (discountType === 'Percentage') {
+      return Math.max(0, subtotal - (subtotal * (discVal / 100)));
+    } else {
+      return Math.max(0, subtotal - discVal);
+    }
+  }, [cartTotal, discount, discountType]);
+
   // Add or Edit Accessory Submit
   const handleAccessorySubmit = async (e) => {
     e.preventDefault();
@@ -181,7 +194,9 @@ const AccessoriesPOS = ({ customers, onAddPerson, onPayment }) => {
 
     const payload = {
       items: checkoutItems,
-      totalAmount: cartTotal,
+      totalAmount: finalTotal,
+      discount: Number(discount) || 0,
+      discountType,
       soldTo: checkoutForm.soldTo,
       paymentType: checkoutForm.paymentType,
       buyerPhone: checkoutForm.buyerPhone
@@ -202,6 +217,8 @@ const AccessoriesPOS = ({ customers, onAddPerson, onPayment }) => {
       // Reset cart and show printable receipt
       setShowReceipt(res.data.sale || { ...payload, _id: `sale-demo-${Date.now()}` });
       setCart([]);
+      setDiscount('');
+      setDiscountType('Flat');
       setCheckoutForm({ soldTo: '', paymentType: 'Cash', buyerPhone: '' });
     } catch (err) {
       // Mock Mode complete sale
@@ -220,7 +237,7 @@ const AccessoriesPOS = ({ customers, onAddPerson, onPayment }) => {
       // Trigger local Ledger update if Udhaar
       if (checkoutForm.paymentType === 'Udhaar') {
         const existing = customers.find(c => c.name === checkoutForm.soldTo);
-        const amountNum = cartTotal;
+        const amountNum = finalTotal;
         let updatedCust;
 
         if (existing) {
@@ -248,6 +265,8 @@ const AccessoriesPOS = ({ customers, onAddPerson, onPayment }) => {
 
       setShowReceipt({ ...payload, _id: `sale-demo-${Date.now()}` });
       setCart([]);
+      setDiscount('');
+      setDiscountType('Flat');
       setCheckoutForm({ soldTo: '', paymentType: 'Cash', buyerPhone: '' });
     } finally {
       setProcessingCheckout(false);
@@ -447,9 +466,65 @@ const AccessoriesPOS = ({ customers, onAddPerson, onPayment }) => {
         {/* Totals & Checkout Form Panel */}
         <div className="p-md md:p-lg bg-surface-container-lowest/80 border-t border-white/10 space-y-md shrink-0">
           
-          <div className="flex justify-between items-center text-sm font-bold text-on-surface">
-            <span className="text-on-surface-variant">Grand Total:</span>
-            <span className="font-mono-data text-secondary text-lg font-black">PKR {cartTotal.toLocaleString()}</span>
+          {/* Discount Section */}
+          <div className="flex items-center justify-between gap-md border-t border-white/5 pt-md">
+            <div className="space-y-1 text-xs flex-1">
+              <label className="text-[10px] text-on-surface-variant uppercase tracking-wider font-semibold">Apply Discount</label>
+              <div className="flex bg-surface-container rounded-lg overflow-hidden border border-white/10 items-center">
+                <input 
+                  type="number"
+                  min="0"
+                  className="w-full bg-transparent py-2 px-3 text-xs text-on-surface outline-none"
+                  placeholder={discountType === 'Percentage' ? "Enter %" : "Enter PKR amount"}
+                  value={discount}
+                  onChange={(e) => setDiscount(e.target.value)}
+                />
+                <div className="flex border-l border-white/10 shrink-0">
+                  <button 
+                    type="button"
+                    onClick={() => setDiscountType('Flat')}
+                    className={`px-2.5 py-2 text-[10px] font-bold transition-colors cursor-pointer ${
+                      discountType === 'Flat' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface'
+                    }`}
+                  >
+                    PKR
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setDiscountType('Percentage')}
+                    className={`px-2.5 py-2 text-[10px] font-bold transition-colors cursor-pointer ${
+                      discountType === 'Percentage' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface'
+                    }`}
+                  >
+                    %
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1 text-xs border-t border-white/10 pt-md">
+            {Number(discount) > 0 && (
+              <>
+                <div className="flex justify-between items-center text-on-surface-variant">
+                  <span>Subtotal:</span>
+                  <span className="font-mono-data">PKR {cartTotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-error">
+                  <span>Discount:</span>
+                  <span className="font-mono-data">
+                    {discountType === 'Percentage' 
+                      ? `-${discount}% (PKR ${(cartTotal * (Number(discount) / 100)).toLocaleString()})`
+                      : `-PKR ${Number(discount).toLocaleString()}`
+                    }
+                  </span>
+                </div>
+              </>
+            )}
+            <div className="flex justify-between items-center text-sm font-bold text-on-surface pt-1">
+              <span className="text-on-surface-variant">Grand Total:</span>
+              <span className="font-mono-data text-secondary text-lg font-black">PKR {finalTotal.toLocaleString()}</span>
+            </div>
           </div>
 
           <form onSubmit={handleCheckoutSubmit} className="space-y-md">
@@ -665,6 +740,24 @@ const AccessoriesPOS = ({ customers, onAddPerson, onPayment }) => {
                 ))}
               </tbody>
             </table>
+
+            {showReceipt.discount > 0 && (
+              <div className="text-[10px] border-b border-black/10 pb-1 mb-1 space-y-0.5">
+                <div className="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span>PKR {showReceipt.items.reduce((sum, item) => sum + (item.sellingPrice * item.quantity), 0).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-red-600 font-bold">
+                  <span>Discount:</span>
+                  <span>
+                    {showReceipt.discountType === 'Percentage'
+                      ? `-${showReceipt.discount}%`
+                      : `-PKR ${showReceipt.discount.toLocaleString()}`
+                    }
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-between items-center text-xs font-bold mb-xl">
               <span>Total Paid/Owed:</span>

@@ -26,6 +26,15 @@ const accessorySaleSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  discount: {
+    type: Number,
+    default: 0
+  },
+  discountType: {
+    type: String,
+    enum: ['Flat', 'Percentage'],
+    default: 'Flat'
+  },
   soldTo: {
     type: String,
     required: true,
