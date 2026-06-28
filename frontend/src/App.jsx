@@ -22,6 +22,7 @@ function App() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [detailMobile, setDetailMobile] = useState(null);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [filters, setFilters] = useState({
     brands: [],
     condition: '',
@@ -269,8 +270,8 @@ function App() {
     <div className="flex bg-background min-h-screen text-on-surface select-none">
       <ToastContainer theme="dark" position="bottom-right" />
       
-      {/* SideNavBar */}
-      <aside className="w-[230px] h-screen fixed left-0 top-0 bg-surface-container border-r border-white/10 shadow-2xl shadow-black/40 flex flex-col py-lg z-50">
+      {/* ===== SIDEBAR (Desktop only) ===== */}
+      <aside className="hidden md:flex w-[230px] h-screen fixed left-0 top-0 bg-surface-container border-r border-white/10 shadow-2xl shadow-black/40 flex-col py-lg z-50">
         <div className="px-lg mb-xl">
           <h1 className="font-headline-md text-headline-md text-primary tracking-tight font-bold">Al Sheikh</h1>
           <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest mt-1">Flagship Store</p>
@@ -329,39 +330,54 @@ function App() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="ml-[230px] flex-1 flex flex-col relative min-h-screen">
-        {/* TopNavBar */}
-        <header className="fixed top-0 right-0 left-[230px] z-40 bg-surface/70 backdrop-blur-xl border-b border-white/5 shadow-sm shadow-black/20 flex justify-between items-center px-margin-desktop h-16">
-          <div className="flex items-center gap-lg w-[400px]">
-            <div className="relative w-full group">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors">search</span>
-              <input 
-                type="text"
-                className="w-full bg-surface-container-lowest border border-white/20 rounded-full py-2 pl-10 pr-4 text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary/50 transition-all outline-none"
-                placeholder={
-                  activeTab === 'inventory' 
-                    ? "Search inventory by IMEI or Model..." 
-                    : activeTab === 'ledger' 
-                    ? "Search accounts by name..." 
-                    : "Search sales by model, buyer, or IMEI..."
-                }
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+      {/* ===== MAIN CONTENT ===== */}
+      <main className="md:ml-[230px] flex-1 flex flex-col relative min-h-screen">
+
+        {/* ===== TOP HEADER ===== */}
+        <header className="fixed top-0 right-0 left-0 md:left-[230px] z-40 bg-surface/70 backdrop-blur-xl border-b border-white/5 shadow-sm shadow-black/20 flex justify-between items-center px-4 md:px-margin-desktop h-14 md:h-16">
+          
+          {/* Mobile: Brand name | Desktop: Search bar */}
+          <div className="flex items-center gap-3">
+            {/* Mobile brand */}
+            <span className="md:hidden font-bold text-primary text-lg tracking-tight">Al Sheikh</span>
+            
+            {/* Desktop search */}
+            <div className="hidden md:flex items-center gap-lg w-[400px]">
+              <div className="relative w-full group">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors">search</span>
+                <input 
+                  type="text"
+                  className="w-full bg-surface-container-lowest border border-white/20 rounded-full py-2 pl-10 pr-4 text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary/50 transition-all outline-none"
+                  placeholder={
+                    activeTab === 'inventory' 
+                      ? "Search inventory by IMEI or Model..." 
+                      : activeTab === 'ledger' 
+                      ? "Search accounts by name..." 
+                      : "Search sales by model, buyer, or IMEI..."
+                  }
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-md">
+
+          <div className="flex items-center gap-2 md:gap-md">
+            {/* Mobile search icon */}
+            <button 
+              className="md:hidden hover:bg-white/5 rounded-full p-2 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer"
+              onClick={() => setShowMobileSearch(prev => !prev)}
+            >
+              <span className="material-symbols-outlined">{showMobileSearch ? 'close' : 'search'}</span>
+            </button>
+
             <button className="hover:bg-white/5 rounded-full p-2 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">
               <span className="material-symbols-outlined">notifications</span>
             </button>
-            <button className="hover:bg-white/5 rounded-full p-2 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">
-              <span className="material-symbols-outlined">settings</span>
-            </button>
-            <div className="h-8 w-[1px] bg-white/10 mx-2"></div>
+            <div className="hidden md:block h-8 w-[1px] bg-white/10 mx-2"></div>
             <div className="flex items-center gap-sm cursor-pointer hover:opacity-85 transition-opacity">
               <img 
-                className="w-9 h-9 rounded-full border border-primary/30 object-cover" 
+                className="w-8 h-8 md:w-9 md:h-9 rounded-full border border-primary/30 object-cover" 
                 alt="Admin Profile"
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgVFJndywTO5LzqtxfdhCtt9m0g1jdRMOicEbB1geas7tg5v55403QR0krnObf5PIQwHTr5XSKPrhQhPCvzuiGUOMIrPMuHyLsrw9EzjgpIbq_FM2rHa981zksLIxffSDgBoCHt73x3WogkRzSLOA6HNSIEFXgTZQAkMdVYwZAfT_EG2_GbWLOk-XPMt6Is397eHeuZLfZ-YebkAQlKCJTzzqRXjFSd8-6g2i9xeu15ErVDaf9wgchxPeWrTrov0ZuJT10Tr0IvYY"
               />
@@ -373,9 +389,31 @@ function App() {
           </div>
         </header>
 
-        {/* Scrollable Content Canvas */}
-        <div className="flex-1 mt-16 pb-16 overflow-hidden">
-          {/* Ledger gets its own full-height layout, other tabs get standard padding */}
+        {/* Mobile expandable search bar */}
+        {showMobileSearch && (
+          <div className="md:hidden fixed top-14 left-0 right-0 z-39 bg-surface/95 backdrop-blur-xl border-b border-white/10 px-4 py-3">
+            <div className="relative w-full group">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors">search</span>
+              <input 
+                type="text"
+                autoFocus
+                className="w-full bg-surface-container-lowest border border-white/20 rounded-full py-2 pl-10 pr-4 text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary/50 transition-all outline-none"
+                placeholder={
+                  activeTab === 'inventory' 
+                    ? "Search by IMEI or Model..." 
+                    : activeTab === 'ledger' 
+                    ? "Search accounts..." 
+                    : "Search sales..."
+                }
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ===== SCROLLABLE CONTENT ===== */}
+        <div className="flex-1 mt-14 md:mt-16 pb-20 md:pb-16 overflow-hidden">
           {activeTab === 'ledger' ? (
             <div className="h-full overflow-hidden">
               <LedgerView
@@ -390,14 +428,14 @@ function App() {
               />
             </div>
           ) : (
-          <div className="px-margin-desktop py-xl overflow-y-auto h-full custom-scrollbar">
+          <div className="px-4 md:px-margin-desktop py-4 md:py-xl overflow-y-auto h-full custom-scrollbar">
             {activeTab === 'inventory' ? (
               <div>
                 {/* Header Section */}
-                <div className="flex justify-between items-end mb-lg">
+                <div className="flex justify-between items-end mb-4 md:mb-lg">
                   <div>
-                    <h2 className="font-headline-lg text-headline-lg text-on-surface font-semibold">Inventory Management</h2>
-                    <p className="font-body-md text-on-surface-variant">Manage flagship devices, stock levels and customer credit.</p>
+                    <h2 className="text-xl md:font-headline-lg md:text-headline-lg text-on-surface font-semibold">Inventory</h2>
+                    <p className="font-body-md text-on-surface-variant text-xs md:text-sm hidden md:block">Manage flagship devices, stock levels and customer credit.</p>
                   </div>
                   <div className="flex gap-sm relative">
                     <button
@@ -407,7 +445,8 @@ function App() {
                         showFilterPanel ? 'border-primary/50 text-primary' : 'border-white/10'
                       }`}
                     >
-                      <span className="material-symbols-outlined text-[16px]">filter_list</span> Filter
+                      <span className="material-symbols-outlined text-[16px]">filter_list</span>
+                      <span className="hidden sm:inline">Filter</span>
                       {(filters.brands.length > 0 || filters.condition || filters.priceMin || filters.priceMax || filters.paymentType !== 'All') && (
                         <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary"></span>
                       )}
@@ -416,7 +455,8 @@ function App() {
                       onClick={handleExport}
                       className="bg-surface-container-high border border-white/10 px-md py-2 rounded-lg flex items-center gap-2 hover:bg-surface-container-highest transition-colors cursor-pointer text-xs font-semibold"
                     >
-                      <span className="material-symbols-outlined text-[16px]">download</span> Export
+                      <span className="material-symbols-outlined text-[16px]">download</span>
+                      <span className="hidden sm:inline">Export</span>
                     </button>
                     {showFilterPanel && (
                       <FilterPanel
@@ -430,33 +470,33 @@ function App() {
                 </div>
 
                 {/* Bento Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-gutter mb-xl">
-                  <div className="frosted-metal p-lg rounded-xl flex flex-col justify-between h-32">
-                    <span className="text-primary-fixed-dim material-symbols-outlined self-start">smartphone</span>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-gutter mb-4 md:mb-xl">
+                  <div className="frosted-metal p-3 md:p-lg rounded-xl flex flex-col justify-between h-24 md:h-32">
+                    <span className="text-primary-fixed-dim material-symbols-outlined self-start text-[20px] md:text-[24px]">smartphone</span>
                     <div>
-                      <p className="text-on-surface-variant text-[11px] uppercase tracking-wider">Total Available Stock</p>
-                      <h3 className="text-headline-md font-mono-data font-bold mt-1 text-on-surface">{totalStockCount} Units</h3>
+                      <p className="text-on-surface-variant text-[10px] md:text-[11px] uppercase tracking-wider">Available Stock</p>
+                      <h3 className="text-lg md:text-headline-md font-mono-data font-bold mt-1 text-on-surface">{totalStockCount} Units</h3>
                     </div>
                   </div>
-                  <div className="frosted-metal p-lg rounded-xl flex flex-col justify-between h-32 border-l-4 border-l-secondary">
-                    <span className="text-secondary material-symbols-outlined self-start">payments</span>
+                  <div className="frosted-metal p-3 md:p-lg rounded-xl flex flex-col justify-between h-24 md:h-32 border-l-4 border-l-secondary">
+                    <span className="text-secondary material-symbols-outlined self-start text-[20px] md:text-[24px]">payments</span>
                     <div>
-                      <p className="text-on-surface-variant text-[11px] uppercase tracking-wider">Monthly Revenue</p>
-                      <h3 className="text-headline-md font-mono-data font-bold mt-1 text-secondary">PKR {monthlyRevenue.toLocaleString()}</h3>
+                      <p className="text-on-surface-variant text-[10px] md:text-[11px] uppercase tracking-wider">Monthly Revenue</p>
+                      <h3 className="text-sm md:text-headline-md font-mono-data font-bold mt-1 text-secondary">PKR {monthlyRevenue.toLocaleString()}</h3>
                     </div>
                   </div>
-                  <div className="frosted-metal p-lg rounded-xl flex flex-col justify-between h-32 border-l-4 border-l-tertiary">
-                    <span className="text-tertiary material-symbols-outlined self-start">pending_actions</span>
+                  <div className="frosted-metal p-3 md:p-lg rounded-xl flex flex-col justify-between h-24 md:h-32 border-l-4 border-l-tertiary">
+                    <span className="text-tertiary material-symbols-outlined self-start text-[20px] md:text-[24px]">pending_actions</span>
                     <div>
-                      <p className="text-on-surface-variant text-[11px] uppercase tracking-wider">Total Outstanding Udhaar</p>
-                      <h3 className="text-headline-md font-mono-data font-bold mt-1 text-tertiary">PKR {totalUdhaar.toLocaleString()}</h3>
+                      <p className="text-on-surface-variant text-[10px] md:text-[11px] uppercase tracking-wider">Outstanding Udhaar</p>
+                      <h3 className="text-sm md:text-headline-md font-mono-data font-bold mt-1 text-tertiary">PKR {totalUdhaar.toLocaleString()}</h3>
                     </div>
                   </div>
-                  <div className="frosted-metal p-lg rounded-xl flex flex-col justify-between h-32 border-l-4 border-l-error">
-                    <span className="text-error material-symbols-outlined self-start">warning</span>
+                  <div className="frosted-metal p-3 md:p-lg rounded-xl flex flex-col justify-between h-24 md:h-32 border-l-4 border-l-error">
+                    <span className="text-error material-symbols-outlined self-start text-[20px] md:text-[24px]">warning</span>
                     <div>
-                      <p className="text-on-surface-variant text-[11px] uppercase tracking-wider">Low Stock Models</p>
-                      <h3 className="text-headline-md font-mono-data font-bold mt-1 text-error">{lowStockAlert} Models</h3>
+                      <p className="text-on-surface-variant text-[10px] md:text-[11px] uppercase tracking-wider">Low Stock Models</p>
+                      <h3 className="text-lg md:text-headline-md font-mono-data font-bold mt-1 text-error">{lowStockAlert} Models</h3>
                     </div>
                   </div>
                 </div>
@@ -486,8 +526,8 @@ function App() {
           )}
         </div>
 
-        {/* Footer */}
-        <footer className="fixed bottom-0 right-0 left-[230px] bg-surface-container-lowest border-t border-white/5 flex justify-between items-center px-margin-desktop py-xs z-30">
+        {/* ===== FOOTER (Desktop only) ===== */}
+        <footer className="hidden md:flex fixed bottom-0 right-0 left-[230px] bg-surface-container-lowest border-t border-white/5 justify-between items-center px-margin-desktop py-xs z-30">
           <div className="flex items-center gap-md">
             <span className="font-label-md text-label-md font-bold text-secondary text-xs">Al Sheikh Mobiles ERP</span>
             <span className="text-on-surface-variant text-[10px]">© 2026 • v2.4.0</span>
@@ -500,7 +540,53 @@ function App() {
         </footer>
       </main>
 
-      {/* Add New Mobile Modal Overlay */}
+      {/* ===== BOTTOM NAV BAR (Mobile only) ===== */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface-container/95 backdrop-blur-xl border-t border-white/10 flex items-center justify-around px-2 py-1 safe-area-pb">
+        <button
+          onClick={() => setActiveTab('inventory')}
+          className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all cursor-pointer ${
+            activeTab === 'inventory' ? 'text-primary' : 'text-on-surface-variant'
+          }`}
+        >
+          <span className={`material-symbols-outlined text-[24px] transition-all ${
+            activeTab === 'inventory' ? 'text-primary' : ''
+          }`} style={{ fontVariationSettings: activeTab === 'inventory' ? "'FILL' 1" : "'FILL' 0" }}>inventory_2</span>
+          <span className="text-[10px] font-semibold">Inventory</span>
+        </button>
+
+        {/* FAB - New Entry (center) */}
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex flex-col items-center gap-0.5 -mt-6 cursor-pointer"
+        >
+          <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-xl shadow-primary/40 active:scale-95 transition-transform">
+            <span className="material-symbols-outlined text-on-primary text-[28px]">add</span>
+          </div>
+          <span className="text-[10px] font-semibold text-primary mt-0.5">Add</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('ledger')}
+          className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all cursor-pointer ${
+            activeTab === 'ledger' ? 'text-primary' : 'text-on-surface-variant'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: activeTab === 'ledger' ? "'FILL' 1" : "'FILL' 0" }}>menu_book</span>
+          <span className="text-[10px] font-semibold">Ledger</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('dashboard')}
+          className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all cursor-pointer ${
+            activeTab === 'dashboard' ? 'text-primary' : 'text-on-surface-variant'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: activeTab === 'dashboard' ? "'FILL' 1" : "'FILL' 0" }}>analytics</span>
+          <span className="text-[10px] font-semibold">Analytics</span>
+        </button>
+      </nav>
+
+      {/* ===== MODALS ===== */}
       {showAddModal && (
         <AddMobileForm 
           onMobileAdded={handleMobileAdded} 
@@ -508,8 +594,6 @@ function App() {
           onClose={() => setShowAddModal(false)}
         />
       )}
-
-      {/* Sell Mobile Modal Overlay */}
       {selectedMobile && (
         <SellMobileModal 
           mobile={selectedMobile} 
@@ -518,7 +602,6 @@ function App() {
           onSold={handleMobileSold} 
         />
       )}
-      {/* Mobile Detail Modal */}
       {detailMobile && (
         <MobileDetailModal
           mobile={detailMobile}

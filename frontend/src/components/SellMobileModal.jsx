@@ -91,8 +91,8 @@ const SellMobileModal = ({ mobile, customers, onClose, onSold }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-lg bg-black/80 backdrop-blur-sm transition-opacity duration-300">
-      <div className="glass-card w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-float">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-lg bg-black/80 backdrop-blur-sm transition-opacity duration-300">
+      <div className="glass-card w-full md:max-w-md md:rounded-2xl rounded-t-2xl overflow-hidden shadow-2xl md:animate-float max-h-[95dvh] md:max-h-[90vh] flex flex-col">
         <div className="p-lg bg-primary-container text-on-primary-container flex justify-between items-center">
           <h3 className="font-headline-md font-bold text-lg">Sell Device</h3>
           <button 

@@ -66,11 +66,11 @@ const MobileDetailModal = ({ mobile, onClose, onReturn, onSellClick }) => {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4"
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-surface-container w-full max-w-2xl rounded-2xl border border-white/10 shadow-2xl shadow-black/60 overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-surface-container w-full md:max-w-2xl md:rounded-2xl rounded-t-2xl border border-white/10 shadow-2xl shadow-black/60 overflow-hidden flex flex-col max-h-[95dvh] md:max-h-[90vh]">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 shrink-0">

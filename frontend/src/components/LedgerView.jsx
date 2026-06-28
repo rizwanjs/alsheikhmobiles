@@ -145,11 +145,15 @@ const LedgerView = ({ customers, searchQuery, onPayment, onAddPerson }) => {
     return results.reverse(); // Show latest transactions first in UI
   }, [selectedCustomer]);
 
+  const [mobileShowDetail, setMobileShowDetail] = useState(false);
+
   return (
-    <div className="flex h-[calc(100vh-64px-36px)] overflow-hidden text-left font-body-md">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-56px-0px)] md:h-[calc(100vh-64px-36px)] overflow-hidden text-left font-body-md">
       
-      {/* Left Column: Accounts List */}
-      <section className="w-1/3 border-r border-white/10 flex flex-col bg-surface-container-low/30 backdrop-blur-md">
+      {/* Left Column: Accounts List — hidden on mobile when detail is shown */}
+      <section className={`${
+        mobileShowDetail ? 'hidden md:flex' : 'flex'
+      } md:w-1/3 w-full border-r border-white/10 flex-col bg-surface-container-low/30 backdrop-blur-md`}>
         <div className="p-md border-b border-white/5 flex justify-between items-center bg-surface-container-lowest/50">
           <div>
             <h2 className="font-headline-md text-headline-md text-on-surface font-bold">Ledger Accounts</h2>
@@ -177,7 +181,7 @@ const LedgerView = ({ customers, searchQuery, onPayment, onAddPerson }) => {
               return (
                 <div 
                   key={customer._id}
-                  onClick={() => setSelectedCustomer(customer)}
+                  onClick={() => { setSelectedCustomer(customer); setMobileShowDetail(true); }}
                   className={`p-md cursor-pointer transition-colors duration-200 border-l-4 hover:bg-white/5 ${
                     isActive 
                       ? 'bg-primary-container/10 border-primary' 
@@ -212,7 +216,17 @@ const LedgerView = ({ customers, searchQuery, onPayment, onAddPerson }) => {
       </section>
 
       {/* Right Column: Account Details & Transaction History */}
-      <section className="flex-1 flex flex-col overflow-y-auto custom-scrollbar p-lg gap-lg bg-background">
+      <section className={`${
+        mobileShowDetail ? 'flex' : 'hidden md:flex'
+      } flex-1 flex-col overflow-y-auto custom-scrollbar p-4 md:p-lg gap-lg bg-background`}>
+        {/* Mobile Back Button */}
+        <button
+          className="md:hidden flex items-center gap-2 text-primary text-sm font-semibold mb-2 cursor-pointer"
+          onClick={() => setMobileShowDetail(false)}
+        >
+          <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+          Back to Accounts
+        </button>
         {selectedCustomer ? (
           <div className="space-y-lg">
             
