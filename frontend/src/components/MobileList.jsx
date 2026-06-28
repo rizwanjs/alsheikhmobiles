@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const getMobileImage = (modelName) => {
   const model = (modelName || '').toLowerCase();
@@ -15,7 +15,7 @@ const getMobileImage = (modelName) => {
   return 'https://lh3.googleusercontent.com/aida-public/AB6AXuAxwalBlCSAJGREppd2mo4ehjdk-2MYf7E5nEyknJkpII1ir3paSi5jtpPC7agjZ0KgQKarwjKixk22pBbllAnUn_ZKo8KRyNyt2wiQcn86qBhy3mZbdFPf9YyJY045rNbFCdql-A5kHUse7x_SZ1IJWUCtxlpVFHhoaB-hm5n4en1sXDMWq0IPNepTYirvV5nLkQJQCsMT3UrgQzFFlvMjcUj7Oweka0i0jzq2B8OmQr-P-CnayWK18w6Jbm81m4n-3o8VmHXafnY';
 };
 
-const MobileList = ({ mobiles, onSellClick }) => {
+const MobileList = ({ mobiles, onSellClick, onDetailClick }) => {
   const [statusFilter, setStatusFilter] = useState('All'); // 'All' | 'Available' | 'Sold'
 
   const filteredMobiles = mobiles.filter(mobile => {
@@ -35,10 +35,10 @@ const MobileList = ({ mobiles, onSellClick }) => {
   return (
     <div className="space-y-md text-left">
       {/* Category filter pills */}
-      <div className="flex justify-between items-center bg-surface-container-low/50 p-2 rounded-xl border border-white/5 mb-md max-w-sm">
+      <div className="flex justify-between items-center gap-4 mb-md max-w-md">
         <button 
           onClick={() => setStatusFilter('All')}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-center transition-all ${
+          className={`flex-1 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-center transition-all whitespace-nowrap ${
             statusFilter === 'All' ? 'bg-primary-container text-on-primary-container' : 'text-on-surface-variant hover:text-on-surface'
           }`}
         >
@@ -46,7 +46,7 @@ const MobileList = ({ mobiles, onSellClick }) => {
         </button>
         <button 
           onClick={() => setStatusFilter('Available')}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-center transition-all ${
+          className={`flex-1 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-center transition-all whitespace-nowrap ${
             statusFilter === 'Available' ? 'bg-primary-container text-on-primary-container' : 'text-on-surface-variant hover:text-on-surface'
           }`}
         >
@@ -54,7 +54,7 @@ const MobileList = ({ mobiles, onSellClick }) => {
         </button>
         <button 
           onClick={() => setStatusFilter('Sold')}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-center transition-all ${
+          className={`flex-1 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-center transition-all whitespace-nowrap ${
             statusFilter === 'Sold' ? 'bg-primary-container text-on-primary-container' : 'text-on-surface-variant hover:text-on-surface'
           }`}
         >
@@ -76,7 +76,8 @@ const MobileList = ({ mobiles, onSellClick }) => {
             return (
               <div 
                 key={mobile._id} 
-                className={`frosted-metal rounded-xl overflow-hidden group hover:scale-[1.02] transition-all duration-300 relative flex flex-col justify-between ${
+                onClick={() => onDetailClick && onDetailClick(mobile)}
+                className={`frosted-metal rounded-xl overflow-hidden group hover:scale-[1.02] transition-all duration-300 relative flex flex-col justify-between cursor-pointer ${
                   isUdhaar ? 'border-tertiary/30 neon-glow' : 'border-white/5 hover:border-primary/50'
                 }`}
               >
@@ -159,7 +160,7 @@ const MobileList = ({ mobiles, onSellClick }) => {
 
                     {!isSold ? (
                       <button 
-                        onClick={() => onSellClick(mobile)}
+                        onClick={(e) => { e.stopPropagation(); onSellClick(mobile); }}
                         className="bg-primary-container text-on-primary-container hover:bg-primary-container/80 px-3 py-1.5 rounded-lg text-xs font-bold active:scale-[0.98] transition-all cursor-pointer flex items-center gap-1 shadow shadow-primary-container/10"
                       >
                         <span className="material-symbols-outlined text-[14px]">shopping_cart</span>

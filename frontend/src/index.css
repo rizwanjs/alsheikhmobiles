@@ -101,3 +101,10 @@ body {
 .hover-slide-right:hover {
   transform: translateX(4px);
 }
+
+/* Native select options styling to prevent white-on-white text issues */
+select option {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+}
+

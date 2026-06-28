@@ -145,7 +145,7 @@ const LedgerView = ({ customers, searchQuery, onPayment, onAddPerson }) => {
   }, [selectedCustomer]);
 
   return (
-    <div className="flex h-[calc(100vh-100px)] -mx-margin-desktop -my-xl overflow-hidden text-left font-body-md">
+    <div className="flex h-[calc(100vh-64px-36px)] overflow-hidden text-left font-body-md">
       
       {/* Left Column: Accounts List */}
       <section className="w-1/3 border-r border-white/10 flex flex-col bg-surface-container-low/30 backdrop-blur-md">
@@ -237,9 +237,9 @@ const LedgerView = ({ customers, searchQuery, onPayment, onAddPerson }) => {
                   </div>
                 </div>
 
-                <div className="mt-lg flex items-end justify-between border-t border-white/5 pt-lg">
-                  <div className="flex gap-xl">
-                    <div>
+                <div className="mt-lg flex flex-wrap gap-lg border-t border-white/5 pt-lg justify-between items-start">
+                  <div className="flex flex-wrap gap-lg">
+                    <div className="min-w-[150px]">
                       <p className="text-[10px] text-on-surface-variant uppercase tracking-wider">Net Balance</p>
                       <p className={`text-lg font-bold font-mono-data ${
                         selectedCustomer.balance === 0 
@@ -247,16 +247,16 @@ const LedgerView = ({ customers, searchQuery, onPayment, onAddPerson }) => {
                           : (selectedCustomer.balance < 0 ? 'text-error' : 'text-secondary')
                       }`}>
                         PKR {Math.abs(selectedCustomer.balance).toLocaleString()} 
-                        <span className="text-xs font-semibold ml-1">
+                        <span className="text-xs font-semibold ml-1 block xl:inline">
                           {selectedCustomer.balance === 0 ? '' : (selectedCustomer.balance < 0 ? '(Payable)' : '(Receivable)')}
                         </span>
                       </p>
                     </div>
-                    <div className="border-l border-white/10 pl-lg">
+                    <div className="border-l border-white/10 pl-lg min-w-[120px]">
                       <p className="text-[10px] text-on-surface-variant uppercase tracking-wider">Paid In (Got)</p>
                       <p className="text-md font-semibold font-mono-data text-primary">PKR {customerStats.totalIn.toLocaleString()}</p>
                     </div>
-                    <div className="border-l border-white/10 pl-lg">
+                    <div className="border-l border-white/10 pl-lg min-w-[120px]">
                       <p className="text-[10px] text-on-surface-variant uppercase tracking-wider">Paid Out (Gave)</p>
                       <p className="text-md font-semibold font-mono-data text-on-surface-variant">PKR {customerStats.totalOut.toLocaleString()}</p>
                     </div>
@@ -404,6 +404,7 @@ const LedgerView = ({ customers, searchQuery, onPayment, onAddPerson }) => {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!newPerson.name.trim()) { toast.error('Name is required'); return; }
+                if (!newPerson.phone.trim()) { toast.error('Phone number is required'); return; }
                 const balNum = Math.abs(Number(newPerson.balance) || 0);
                 const actualBalance = newPerson.type === 'supplier' ? -balNum : balNum;
                 
@@ -447,6 +448,7 @@ const LedgerView = ({ customers, searchQuery, onPayment, onAddPerson }) => {
                   value={newPerson.phone}
                   onChange={(e) => setNewPerson({ ...newPerson, phone: e.target.value })}
                   placeholder="e.g. 0300-1234567"
+                  required
                 />
               </div>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
@@ -10,29 +10,56 @@ const AddMobileForm = ({ onMobileAdded, customers, onClose }) => {
     details: '',
     sellerName: '',
     sellerCnic: '',
+    sellerPhone: '',
     condition: 'Brand New (Box Packed)',
     purchasePaymentType: 'Cash'
   });
+  const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const availableSlots = 4 - images.length;
+    const filesToProcess = files.slice(0, availableSlots);
+
+    filesToProcess.forEach(file => {
+      if (file.size > 3 * 1024 * 1024) {
+        toast.error(`${file.name} is too large. Max size is 3MB.`);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImages(prev => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemoveImage = (indexToRemove) => {
+    setImages(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/mobiles', formData);
+      const response = await axios.post('http://localhost:5000/api/mobiles', { ...formData, images });
       toast.success('Mobile added successfully!');
-      if (onMobileAdded) onMobileAdded(response.data);
-    } catch (error) {
+      // Backend now returns { mobile, person } (person = supplier ledger entry, or null for Cash).
+      const { mobile, person } = response.data;
+      if (onMobileAdded) onMobileAdded(mobile, person);
+    } catch (_error) {
       console.log('Mocking mobile addition success...');
       const newMobile = {
         _id: `mobile-demo-${Date.now()}`,
         ...formData,
         purchasingPrice: Number(formData.purchasingPrice),
-        status: 'Available'
+        status: 'Available',
+        images
       };
 
       let newSupplierData = null;
@@ -68,9 +95,9 @@ const AddMobileForm = ({ onMobileAdded, customers, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-lg bg-black/80 backdrop-blur-sm transition-opacity duration-300">
-      <div className="glass-card w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl animate-float">
-        <div className="p-lg bg-primary-container text-on-primary-container flex justify-between items-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-lg bg-black/80 backdrop-blur-sm overflow-y-auto">
+      <div className="glass-card w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl animate-float my-auto max-h-[90vh] flex flex-col">
+        <div className="p-lg bg-primary-container text-on-primary-container flex justify-between items-center shrink-0">
           <h3 className="font-headline-md font-bold text-lg">New Inventory Entry</h3>
           <button 
             type="button" 
@@ -81,7 +108,7 @@ const AddMobileForm = ({ onMobileAdded, customers, onClose }) => {
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-lg space-y-md text-left">
+        <form onSubmit={handleSubmit} className="p-lg space-y-md text-left overflow-y-auto custom-scrollbar flex-1">
           <div className="grid grid-cols-2 gap-md">
             <div className="space-y-1">
               <label className="text-label-md text-on-surface-variant font-semibold text-xs">Model Name</label>
@@ -139,7 +166,7 @@ const AddMobileForm = ({ onMobileAdded, customers, onClose }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-md">
+          <div className="grid grid-cols-2 gap-md">
             <div className="space-y-1">
               <label className="text-label-md text-on-surface-variant font-semibold text-xs">Seller Name</label>
               <input 
@@ -152,6 +179,21 @@ const AddMobileForm = ({ onMobileAdded, customers, onClose }) => {
                 placeholder="Seller Name"
               />
             </div>
+            <div className="space-y-1">
+              <label className="text-label-md text-on-surface-variant font-semibold text-xs">Seller Phone Number</label>
+              <input 
+                type="tel" 
+                name="sellerPhone"
+                className="w-full bg-surface-container-lowest border border-white/10 rounded-lg p-2 focus:ring-2 focus:ring-primary/50 outline-none text-on-surface text-sm font-mono-data"
+                value={formData.sellerPhone}
+                onChange={handleChange}
+                required
+                placeholder="e.g. 03xx-xxxxxxx"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-md">
             <div className="space-y-1">
               <label className="text-label-md text-on-surface-variant font-semibold text-xs">Seller CNIC</label>
               <input 
@@ -187,6 +229,41 @@ const AddMobileForm = ({ onMobileAdded, customers, onClose }) => {
               onChange={handleChange}
               placeholder="e.g. Color: Natural Titanium, PTA Approved, Box and Charging Cable available..."
             />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-label-md text-on-surface-variant font-semibold text-xs block mb-1">
+              Upload Device Pictures (Max 4)
+            </label>
+            <div className="flex items-center gap-md">
+              <label className={`flex flex-col items-center justify-center w-20 h-20 border border-dashed border-white/20 hover:border-primary/50 rounded-xl cursor-pointer bg-surface-container-lowest transition-colors group ${images.length >= 4 ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                <span className="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors text-[20px]">add_a_photo</span>
+                <span className="text-[9px] text-on-surface-variant mt-1">Add Photo</span>
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={handleImageUpload} 
+                  disabled={images.length >= 4}
+                />
+              </label>
+              
+              <div className="flex flex-1 gap-sm overflow-x-auto py-1">
+                {images.map((img, idx) => (
+                  <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10 shrink-0 group">
+                    <img src={img} alt="thumbnail" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(idx)}
+                      className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-error cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="pt-lg flex justify-end gap-md">

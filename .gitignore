@@ -1,0 +1,31 @@
+# Dependencies
+**/node_modules/
+node_modules/
+
+# Production build outputs
+**/dist/
+dist/
+
+# Local env files containing secrets (CRITICAL!)
+**/backend/.env
+backend/.env
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Local databases and backups
+**/backend/db.json
+backend/db.json
+*.db
+*.sqlite
+
+# Large archive files
+*.zip
+*.tar.gz
+*.rar
+
+# System files
+.DS_Store
+Thumbs.db

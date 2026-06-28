@@ -63,6 +63,10 @@ const mobileSchema = new mongoose.Schema({
   },
   soldAt: {
     type: Date
+  },
+  images: {
+    type: [String],
+    default: []
   }
 }, {
   timestamps: true

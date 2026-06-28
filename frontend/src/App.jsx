@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import AddMobileForm from './components/AddMobileForm';
@@ -8,6 +8,8 @@ import MobileList from './components/MobileList';
 import SellMobileModal from './components/SellMobileModal';
 import LedgerView from './components/LedgerView';
 import DashboardView from './components/DashboardView';
+import FilterPanel from './components/FilterPanel';
+import MobileDetailModal from './components/MobileDetailModal';
 
 function App() {
   const [activeTab, setActiveTab] = useState('inventory'); // 'inventory' | 'ledger' | 'dashboard'
@@ -17,35 +19,30 @@ function App() {
   const [selectedMobile, setSelectedMobile] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [detailMobile, setDetailMobile] = useState(null);
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [filters, setFilters] = useState({
+    brands: [],
+    condition: '',
+    priceMin: '',
+    priceMax: '',
+    paymentType: 'All'
+  });
+  const filterBtnRef = useRef(null);
 
   useEffect(() => {
-    fetchMobiles();
-    fetchCustomers();
-  }, []);
+    // Fetch from backend or fall back to demo data
+    axios.get('http://localhost:5000/api/mobiles')
+      .then(res => setMobiles(res.data))
+      .catch(() => generateDemoMobiles())
+      .finally(() => setLoading(false));
 
-  const fetchMobiles = async () => {
-    try {
-      const response = await axios.get('http://localhost:5000/api/mobiles');
-      setMobiles(response.data);
-    } catch (error) {
-      console.error('Error fetching mobiles from backend, loading demo mobiles instead...');
-      generateDemoMobiles();
-    } finally {
-      setLoading(false);
-    }
-  };
+    axios.get('http://localhost:5000/api/customers')
+      .then(res => setCustomers(res.data))
+      .catch(() => generateDemoCustomers());
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchCustomers = async () => {
-    try {
-      const response = await axios.get('http://localhost:5000/api/customers');
-      setCustomers(response.data);
-    } catch (error) {
-      console.error('Error fetching customers from backend, loading demo ledger instead...');
-      generateDemoCustomers();
-    }
-  };
-
-  const generateDemoMobiles = () => {
+  function generateDemoMobiles() {
     const demoMobiles = [];
     const brands = ['Apple', 'Samsung', 'Xiaomi', 'Oppo', 'Vivo'];
     const models = {
@@ -117,9 +114,9 @@ function App() {
       });
     }
     setMobiles(demoMobiles);
-  };
+  }
 
-  const generateDemoCustomers = () => {
+  function generateDemoCustomers() {
     setCustomers([
       {
         _id: 'cust-1',
@@ -160,6 +157,16 @@ function App() {
         ]
       }
     ]);
+  }
+
+  const getBrand = (model) => {
+    const m = (model || '').toLowerCase();
+    if (m.includes('iphone') || m.includes('apple')) return 'Apple';
+    if (m.includes('galaxy') || m.includes('samsung') || m.includes('fold') || m.includes('flip')) return 'Samsung';
+    if (m.includes('redmi') || m.includes('poco') || m.includes('xiaomi')) return 'Xiaomi';
+    if (m.includes('reno') || m.includes('find') || m.includes('oppo')) return 'Oppo';
+    if (m.includes('vivo')) return 'Vivo';
+    return 'Other';
   };
 
   const handleMobileAdded = (newMobile, newSupplierData = null) => {
@@ -223,14 +230,48 @@ function App() {
     return Object.values(counts).filter(c => c < 3).length;
   }, [mobiles]);
 
+  const searchAndFilteredMobiles = useMemo(() => {
+    return mobiles.filter(m => {
+      const matchSearch = m.imei.includes(searchQuery) || m.model.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchBrand = filters.brands.length === 0 || filters.brands.includes(getBrand(m.model));
+      const matchCondition = !filters.condition || m.condition === filters.condition;
+      const price = Number(m.purchasingPrice) || 0;
+      const matchPriceMin = !filters.priceMin || price >= Number(filters.priceMin);
+      const matchPriceMax = !filters.priceMax || price <= Number(filters.priceMax);
+      const matchPayment = filters.paymentType === 'All' ||
+        (m.status === 'Available' ? false : m.paymentType === filters.paymentType);
+      return matchSearch && matchBrand && matchCondition && matchPriceMin && matchPriceMax &&
+        (filters.paymentType === 'All' ? true : matchPayment);
+    });
+  }, [mobiles, searchQuery, filters]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleExport = () => {
+    const headers = ['Model','IMEI','Status','Condition','Purchasing Price (PKR)','Selling Price (PKR)','Seller Name','Seller Phone','Seller CNIC','Sold To','Buyer Phone','Buyer CNIC','Payment Type','Sold Date'];
+    const rows = mobiles.map(m => [
+      m.model || '', m.imei || '', m.status || '', m.condition || '',
+      m.purchasingPrice || '', m.sellingPrice || '', m.sellerName || '',
+      m.sellerPhone || '', m.sellerCnic || '', m.soldTo || '',
+      m.buyerPhone || '', m.buyerCnic || '', m.paymentType || '',
+      m.soldAt ? new Date(m.soldAt).toLocaleDateString() : ''
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Al_Sheikh_Mobiles_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex bg-background min-h-screen text-on-surface select-none">
       <ToastContainer theme="dark" position="bottom-right" />
       
       {/* SideNavBar */}
-      <aside className="w-[280px] h-screen fixed left-0 top-0 bg-surface-container border-r border-white/10 shadow-2xl shadow-black/40 flex flex-col py-lg z-50">
+      <aside className="w-[230px] h-screen fixed left-0 top-0 bg-surface-container border-r border-white/10 shadow-2xl shadow-black/40 flex flex-col py-lg z-50">
         <div className="px-lg mb-xl">
-          <h1 className="font-headline-md text-headline-md text-primary tracking-tight font-bold">Al Sheikh Mobiles</h1>
+          <h1 className="font-headline-md text-headline-md text-primary tracking-tight font-bold">Al Sheikh</h1>
           <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest mt-1">Flagship Store</p>
         </div>
         
@@ -288,15 +329,15 @@ function App() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="ml-[280px] flex-1 flex flex-col relative min-h-screen">
+      <main className="ml-[230px] flex-1 flex flex-col relative min-h-screen">
         {/* TopNavBar */}
-        <header className="fixed top-0 right-0 left-[280px] z-40 bg-surface/70 backdrop-blur-xl border-b border-white/5 shadow-sm shadow-black/20 flex justify-between items-center px-margin-desktop h-16">
-          <div className="flex items-center gap-lg flex-1 max-w-xl">
+        <header className="fixed top-0 right-0 left-[230px] z-40 bg-surface/70 backdrop-blur-xl border-b border-white/5 shadow-sm shadow-black/20 flex justify-between items-center px-margin-desktop h-16">
+          <div className="flex items-center gap-lg w-[400px]">
             <div className="relative w-full group">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors">search</span>
               <input 
                 type="text"
-                className="w-full bg-surface-container-lowest border-none rounded-full py-2 pl-10 pr-4 text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary/50 transition-all outline-none"
+                className="w-full bg-surface-container-lowest border border-white/20 rounded-full py-2 pl-10 pr-4 text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary/50 transition-all outline-none"
                 placeholder={
                   activeTab === 'inventory' 
                     ? "Search inventory by IMEI or Model..." 
@@ -332,8 +373,23 @@ function App() {
         </header>
 
         {/* Scrollable Content Canvas */}
-        <div className="flex-1 mt-16 pb-16 overflow-y-auto custom-scrollbar">
-          <div className="px-margin-desktop py-xl">
+        <div className="flex-1 mt-16 pb-16 overflow-hidden">
+          {/* Ledger gets its own full-height layout, other tabs get standard padding */}
+          {activeTab === 'ledger' ? (
+            <div className="h-full overflow-hidden">
+              <LedgerView
+                customers={customers}
+                searchQuery={searchQuery}
+                onPayment={(updatedCustomer) => {
+                  setCustomers(customers.map(c => c._id === updatedCustomer._id ? updatedCustomer : c));
+                }}
+                onAddPerson={(newPerson) => {
+                  setCustomers([newPerson, ...customers]);
+                }}
+              />
+            </div>
+          ) : (
+          <div className="px-margin-desktop py-xl overflow-y-auto h-full custom-scrollbar">
             {activeTab === 'inventory' ? (
               <div>
                 {/* Header Section */}
@@ -342,13 +398,33 @@ function App() {
                     <h2 className="font-headline-lg text-headline-lg text-on-surface font-semibold">Inventory Management</h2>
                     <p className="font-body-md text-on-surface-variant">Manage flagship devices, stock levels and customer credit.</p>
                   </div>
-                  <div className="flex gap-sm">
-                    <button className="bg-surface-container-high border border-white/10 px-md py-2 rounded-lg flex items-center gap-2 hover:bg-surface-container-highest transition-colors cursor-pointer text-xs font-semibold">
+                  <div className="flex gap-sm relative">
+                    <button
+                      ref={filterBtnRef}
+                      onClick={() => setShowFilterPanel(prev => !prev)}
+                      className={`relative bg-surface-container-high border px-md py-2 rounded-lg flex items-center gap-2 hover:bg-surface-container-highest transition-colors cursor-pointer text-xs font-semibold ${
+                        showFilterPanel ? 'border-primary/50 text-primary' : 'border-white/10'
+                      }`}
+                    >
                       <span className="material-symbols-outlined text-[16px]">filter_list</span> Filter
+                      {(filters.brands.length > 0 || filters.condition || filters.priceMin || filters.priceMax || filters.paymentType !== 'All') && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary"></span>
+                      )}
                     </button>
-                    <button className="bg-surface-container-high border border-white/10 px-md py-2 rounded-lg flex items-center gap-2 hover:bg-surface-container-highest transition-colors cursor-pointer text-xs font-semibold">
+                    <button
+                      onClick={handleExport}
+                      className="bg-surface-container-high border border-white/10 px-md py-2 rounded-lg flex items-center gap-2 hover:bg-surface-container-highest transition-colors cursor-pointer text-xs font-semibold"
+                    >
                       <span className="material-symbols-outlined text-[16px]">download</span> Export
                     </button>
+                    {showFilterPanel && (
+                      <FilterPanel
+                        filters={filters}
+                        onChange={setFilters}
+                        onReset={() => setFilters({ brands: [], condition: '', priceMin: '', priceMax: '', paymentType: 'All' })}
+                        onClose={() => setShowFilterPanel(false)}
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -392,26 +468,12 @@ function App() {
                   </div>
                 ) : (
                   <MobileList 
-                    mobiles={mobiles.filter(m => 
-                      m.imei.includes(searchQuery) || 
-                      m.model.toLowerCase().includes(searchQuery.toLowerCase())
-                    )} 
-                    onSellClick={(mobile) => setSelectedMobile(mobile)} 
+                    mobiles={searchAndFilteredMobiles} 
+                    onSellClick={(mobile) => setSelectedMobile(mobile)}
+                    onDetailClick={(mobile) => setDetailMobile(mobile)}
                   />
                 )}
               </div>
-            ) : activeTab === 'ledger' ? (
-              <LedgerView 
-                customers={customers} 
-                searchQuery={searchQuery}
-                onPayment={(updatedCustomer) => {
-                  setCustomers(customers.map(c => c._id === updatedCustomer._id ? updatedCustomer : c));
-                  fetchMobiles(); // Reload mobiles to catch any status updates
-                }}
-                onAddPerson={(newPerson) => {
-                  setCustomers([newPerson, ...customers]);
-                }}
-              />
             ) : (
               <DashboardView 
                 mobiles={mobiles} 
@@ -420,10 +482,11 @@ function App() {
               />
             )}
           </div>
+          )}
         </div>
 
         {/* Footer */}
-        <footer className="fixed bottom-0 right-0 left-[280px] bg-surface-container-lowest border-t border-white/5 flex justify-between items-center px-margin-desktop py-xs z-30">
+        <footer className="fixed bottom-0 right-0 left-[230px] bg-surface-container-lowest border-t border-white/5 flex justify-between items-center px-margin-desktop py-xs z-30">
           <div className="flex items-center gap-md">
             <span className="font-label-md text-label-md font-bold text-secondary text-xs">Al Sheikh Mobiles ERP</span>
             <span className="text-on-surface-variant text-[10px]">© 2026 • v2.4.0</span>
@@ -452,6 +515,18 @@ function App() {
           customers={customers}
           onClose={() => setSelectedMobile(null)} 
           onSold={handleMobileSold} 
+        />
+      )}
+      {/* Mobile Detail Modal */}
+      {detailMobile && (
+        <MobileDetailModal
+          mobile={detailMobile}
+          onClose={() => setDetailMobile(null)}
+          onSellClick={(mobile) => { setDetailMobile(null); setSelectedMobile(mobile); }}
+          onReturn={(updatedMobile) => {
+            setMobiles(mobiles.map(m => m._id === updatedMobile._id ? updatedMobile : m));
+            setDetailMobile(null);
+          }}
         />
       )}
     </div>

@@ -1,5 +1,4 @@
-const mongoose = require('mongoose');
-const Mobile = require('./models/Mobile');
+const { connectDB, Mobile, connection } = require('./db');
 require('dotenv').config();
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/alsheikh_mobiles';
@@ -10,12 +9,26 @@ const samsungModels = ['Galaxy S22', 'Galaxy S23', 'Galaxy S24 Ultra', 'Galaxy A
 const xiaomiModels = ['Redmi Note 12', 'Redmi Note 13 Pro', 'Poco X5', 'Xiaomi 13T'];
 const otherModels = ['Reno 10', 'V29', 'C55', 'Note 30', 'Camon 20'];
 
+// Keep track of generated IMEIs to avoid unique-constraint collisions
+const usedImeis = new Set();
+
 function generateRandomImei() {
   let imei = '';
-  for (let i = 0; i < 15; i++) {
-    imei += Math.floor(Math.random() * 10).toString();
-  }
+  do {
+    imei = '';
+    for (let i = 0; i < 15; i++) {
+      imei += Math.floor(Math.random() * 10).toString();
+    }
+  } while (usedImeis.has(imei));
+  usedImeis.add(imei);
   return imei;
+}
+
+function generateRandomCnic() {
+  let cnic = '35202-';
+  for (let i = 0; i < 7; i++) cnic += Math.floor(Math.random() * 10).toString();
+  cnic += `-${Math.floor(Math.random() * 9) + 1}`;
+  return cnic;
 }
 
 function generateRandomMobile() {
@@ -34,15 +47,23 @@ function generateRandomMobile() {
     purchasingPrice: price,
     imei: generateRandomImei(),
     details: `Brand new PTA Approved, Box packed. Color: ${['Black', 'White', 'Blue', 'Gold'][Math.floor(Math.random() * 4)]}`,
-    status: 'Available'
+    status: 'Available',
+    sellerName: ['Ahmad', 'Bilal', 'Usman', 'Ali', 'Zain', 'Hamza', 'Saad'][Math.floor(Math.random() * 7)],
+    sellerCnic: generateRandomCnic(),
+    purchasePaymentType: Math.random() < 0.3 ? 'Udhaar' : 'Cash'
   };
 }
 
 async function seedDatabase() {
   try {
-    console.log('Connecting to MongoDB...');
-    await mongoose.connect(MONGODB_URI);
+    console.log('Connecting to database...');
+    await connectDB(MONGODB_URI);
     console.log('Connected.');
+
+    // Clear existing data so re-seeding doesn't trip the unique IMEI index
+    await Mobile.deleteMany({});
+    await connection.db.collection('customers').deleteMany({});
+    console.log('Cleared existing mobiles & customers.');
 
     const mobilesToInsert = [];
     for (let i = 0; i < 60; i++) {
@@ -56,8 +77,11 @@ async function seedDatabase() {
   } catch (error) {
     console.error('Error seeding database:', error);
   } finally {
-    mongoose.disconnect();
-    console.log('Disconnected from MongoDB.');
+    const mongoose = require('mongoose');
+    if (mongoose.connection && mongoose.connection.readyState !== 0) {
+      mongoose.disconnect();
+    }
+    console.log('Seed script finished.');
   }
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
@@ -7,7 +7,8 @@ const SellMobileModal = ({ mobile, customers, onClose, onSold }) => {
     soldTo: '',
     paymentType: 'Cash',
     sellingPrice: '',
-    buyerCnic: ''
+    buyerCnic: '',
+    buyerPhone: ''
   });
   const [loading, setLoading] = useState(false);
 
@@ -28,9 +29,11 @@ const SellMobileModal = ({ mobile, customers, onClose, onSold }) => {
     try {
       const response = await axios.put(`http://localhost:5000/api/mobiles/${mobile._id}/sell`, formData);
       toast.success('Mobile marked as sold!');
-      onSold(response.data);
+      // Backend now returns { mobile, person } (person = customer ledger entry, or null for Cash).
+      const { mobile: soldMobile, person } = response.data;
+      onSold(soldMobile, person);
       onClose();
-    } catch (error) {
+    } catch (_error) {
       console.log('Mocking sale success in demo mode...');
       
       const updatedMobile = {
@@ -40,6 +43,7 @@ const SellMobileModal = ({ mobile, customers, onClose, onSold }) => {
         paymentType: formData.paymentType,
         sellingPrice: Number(formData.sellingPrice),
         buyerCnic: formData.buyerCnic,
+        buyerPhone: formData.buyerPhone,
         soldAt: new Date().toISOString()
       };
 
@@ -157,17 +161,30 @@ const SellMobileModal = ({ mobile, customers, onClose, onSold }) => {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-label-md text-on-surface-variant font-semibold text-xs">Buyer CNIC</label>
+              <label className="text-label-md text-on-surface-variant font-semibold text-xs">Buyer Phone Number</label>
               <input 
-                type="text"
-                name="buyerCnic"
+                type="tel"
+                name="buyerPhone"
                 className="w-full bg-surface-container-lowest border border-white/10 rounded-lg p-2 focus:ring-2 focus:ring-primary/50 outline-none text-on-surface text-sm font-mono-data"
-                value={formData.buyerCnic}
+                value={formData.buyerPhone}
                 onChange={handleChange}
                 required
-                placeholder="35202-xxxxxxx-x"
+                placeholder="e.g. 03xx-xxxxxxx"
               />
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-label-md text-on-surface-variant font-semibold text-xs">Buyer CNIC</label>
+            <input 
+              type="text"
+              name="buyerCnic"
+              className="w-full bg-surface-container-lowest border border-white/10 rounded-lg p-2 focus:ring-2 focus:ring-primary/50 outline-none text-on-surface text-sm font-mono-data"
+              value={formData.buyerCnic}
+              onChange={handleChange}
+              required
+              placeholder="35202-xxxxxxx-x"
+            />
           </div>
 
           <div className="pt-lg flex justify-end gap-md">
