@@ -481,7 +481,7 @@ const AccessoriesPOS = ({ customers, onAddPerson, onPayment }) => {
           className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
           onClick={(e) => { if (e.target === e.currentTarget) { setShowAddModal(false); resetForm(); } }}
         >
-          <div className="glass-card w-[80vw] max-w-[80vw] h-[80vh] max-h-[80vh] overflow-hidden flex flex-col rounded-2xl border border-white/10 shadow-2xl">
+          <div className="glass-card w-[50vw] max-w-[50vw] h-[60vh] max-h-[60vh] overflow-hidden flex flex-col rounded-2xl border border-white/10 shadow-2xl">
             <div className="p-4 bg-primary-container text-on-primary-container flex justify-between items-center shrink-0">
               <h3 className="font-bold text-sm">{editingAccessory ? 'Edit Accessory' : 'Add New Accessory'}</h3>
               <button
