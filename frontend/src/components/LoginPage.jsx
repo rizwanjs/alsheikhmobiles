@@ -28,6 +28,18 @@ export default function LoginPage({ onLogin }) {
       
       onLogin({ token, username: user, role });
     } catch (err) {
+      // Fallback if backend server is offline or unreachable (e.g. running on Vercel without hosted backend)
+      const isNetworkError = !err.response || err.code === 'ERR_NETWORK' || err.message === 'Network Error';
+      const fallbackUsername = 'admin';
+      const fallbackPassword = 'AlSheikh@2024';
+
+      if (isNetworkError && username === fallbackUsername && password === fallbackPassword) {
+        const dummyToken = 'mock-jwt-token-for-vercel-demo';
+        localStorage.setItem('als_token', dummyToken);
+        localStorage.setItem('als_user', JSON.stringify({ username: 'admin', role: 'admin' }));
+        onLogin({ token: dummyToken, username: 'admin', role: 'admin' });
+        return;
+      }
       setError(err.response?.data?.message || 'Login failed. Check your credentials.');
     } finally {
       setLoading(false);

@@ -62,8 +62,12 @@ function App() {
       axios.get(`${API_URL}/api/auth/verify`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      .catch(() => {
-        handleLogout();
+      .catch((err) => {
+        // If it's a network error (server offline/running on Vercel), don't logout
+        const isNetworkError = !err.response || err.code === 'ERR_NETWORK' || err.message === 'Network Error';
+        if (!isNetworkError) {
+          handleLogout();
+        }
       });
     }
   }, [handleLogout]);
