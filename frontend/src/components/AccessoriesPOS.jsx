@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { API_URL } from '../config';
@@ -475,7 +476,7 @@ const AccessoriesPOS = ({ customers, onAddPerson, onPayment }) => {
       </div>
 
       {/* ════ MODAL: ADD / EDIT ACCESSORY ════ */}
-      {showAddModal && (
+      {showAddModal && createPortal(
         <div
           className="fixed inset-0 z-[200] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget) { setShowAddModal(false); resetForm(); } }}
@@ -576,10 +577,10 @@ const AccessoriesPOS = ({ customers, onAddPerson, onPayment }) => {
             </form>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* ════ MODAL: PRINTABLE RECEIPT ════ */}
-      {showReceipt && (
+      {showReceipt && createPortal(
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white text-black p-5 rounded-xl shadow-2xl max-w-sm w-full font-mono text-left relative my-auto">
             <div className="absolute top-2 right-2 border-2 border-green-600 text-green-600 font-bold uppercase text-[9px] px-2 py-0.5 rounded rotate-12 select-none tracking-wider opacity-80">PAID</div>
@@ -649,7 +650,7 @@ const AccessoriesPOS = ({ customers, onAddPerson, onPayment }) => {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 };
