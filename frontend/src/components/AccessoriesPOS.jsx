@@ -481,7 +481,7 @@ const AccessoriesPOS = ({ customers, onAddPerson, onPayment }) => {
           className="fixed inset-0 z-[200] flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget) { setShowAddModal(false); resetForm(); } }}
         >
-          <div className="bg-surface-container w-full md:max-w-md md:rounded-2xl rounded-t-2xl border border-white/10 shadow-2xl shadow-black/60 overflow-hidden flex flex-col max-h-[95dvh] md:max-h-[90vh]">
+          <div className="glass-card w-full md:max-w-lg md:rounded-2xl rounded-t-2xl border border-white/10 shadow-2xl shadow-black/60 overflow-hidden flex flex-col max-h-[95dvh] md:max-h-[90vh]">
             <div className="p-4 bg-primary-container text-on-primary-container flex justify-between items-center shrink-0">
               <h3 className="font-bold text-sm">{editingAccessory ? 'Edit Accessory' : 'Add New Accessory'}</h3>
               <button
@@ -493,7 +493,7 @@ const AccessoriesPOS = ({ customers, onAddPerson, onPayment }) => {
               </button>
             </div>
 
-            <form onSubmit={handleAccessorySubmit} className="p-4 space-y-3 overflow-y-auto custom-scrollbar text-xs">
+            <form onSubmit={handleAccessorySubmit} className="p-4 space-y-3 overflow-y-auto custom-scrollbar text-xs flex-1">
               <div className="space-y-1">
                 <label className="text-[10px] text-on-surface-variant uppercase tracking-wider font-semibold">Accessory Name *</label>
                 <input
