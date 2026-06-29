@@ -5,7 +5,7 @@ const net = require('net');
 
 const DB_FILE = path.join(__dirname, 'db.json');
 let isMock = false;
-let mockData = { mobiles: [], customers: [], accessories: [], accessorySales: [] };
+let mockData = { mobiles: [], customers: [], accessories: [], accessorySales: [], users: [] };
 
 // Helper to check if a TCP port is open (to quickly check MongoDB availability)
 function checkConnection(uri) {
@@ -50,10 +50,33 @@ function loadMockData() {
       if (!mockData.customers) mockData.customers = [];
       if (!mockData.accessories) mockData.accessories = [];
       if (!mockData.accessorySales) mockData.accessorySales = [];
+      if (!mockData.users) mockData.users = [];
+      
+      // Auto seed default admin if users is empty
+      if (mockData.users.length === 0) {
+        mockData.users.push({
+          _id: 'mock-admin',
+          username: 'admin',
+          password: 'AlSheikh@2024',
+          role: 'admin',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+        saveMockData();
+      }
     } catch (e) {
       console.error('Error reading db.json, resetting database.', e);
     }
   } else {
+    // Fresh file, seed default admin
+    mockData.users = [{
+      _id: 'mock-admin',
+      username: 'admin',
+      password: 'AlSheikh@2024',
+      role: 'admin',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }];
     saveMockData();
   }
 }
@@ -253,6 +276,56 @@ class AccessorySaleModel extends MockModel {
   }
 }
 
+// Mock User Model
+class MockUserModel extends MockModel {
+  constructor(data) {
+    super('users', data);
+    if (!this.role) this.role = 'seller';
+  }
+
+  static async find() {
+    const data = [...mockData.users];
+    return {
+      sort: (criteria) => {
+        return data;
+      },
+      then: (resolve) => resolve(data)
+    };
+  }
+
+  static async findOne(query) {
+    let item;
+    if (query.username) {
+      item = mockData.users.find(u => u.username.toLowerCase() === query.username.toLowerCase());
+    }
+    return item ? new MockUserModel(item) : null;
+  }
+
+  static async findById(id) {
+    const item = mockData.users.find(u => u._id === id);
+    return item ? new MockUserModel(item) : null;
+  }
+
+  static async findByIdAndUpdate(id, updates) {
+    const list = mockData.users;
+    const index = list.findIndex(u => u._id === id);
+    if (index === -1) return null;
+    const item = { ...list[index], ...updates, updatedAt: new Date().toISOString() };
+    list[index] = item;
+    saveMockData();
+    return new MockUserModel(item);
+  }
+
+  static async findByIdAndDelete(id) {
+    const list = mockData.users;
+    const index = list.findIndex(u => u._id === id);
+    if (index === -1) return null;
+    const removed = list.splice(index, 1)[0];
+    saveMockData();
+    return new MockUserModel(removed);
+  }
+}
+
 // Connect function to switch mode
 async function connectDB(uri) {
   const isMongoAlive = await checkConnection(uri);
@@ -261,6 +334,19 @@ async function connectDB(uri) {
       await mongoose.connect(uri);
       console.log('Connected to MongoDB.');
       isMock = false;
+
+      // Seed real database default admin if empty
+      const RealUser = require('./models/User');
+      const adminExists = await RealUser.findOne({ role: 'admin' });
+      if (!adminExists) {
+        const adminUser = new RealUser({
+          username: 'admin',
+          password: 'AlSheikh@2024',
+          role: 'admin'
+        });
+        await adminUser.save();
+        console.log('Default real admin user seeded successfully.');
+      }
     } catch (err) {
       console.error('Failed to connect to MongoDB, falling back to local file database:', err.message);
       isMock = true;
@@ -278,6 +364,7 @@ const RealMobile = require('./models/Mobile');
 const RealCustomer = require('./models/Customer');
 const RealAccessory = require('./models/Accessory');
 const RealAccessorySale = require('./models/AccessorySale');
+const RealUser = require('./models/User');
 
 class Mobile {
   constructor(data) {
@@ -395,6 +482,36 @@ class AccessorySale {
   }
 }
 
+class User {
+  constructor(data) {
+    if (isMock) {
+      return new MockUserModel(data);
+    } else {
+      return new RealUser(data);
+    }
+  }
+
+  static find(...args) {
+    return isMock ? MockUserModel.find(...args) : RealUser.find(...args);
+  }
+
+  static findOne(...args) {
+    return isMock ? MockUserModel.findOne(...args) : RealUser.findOne(...args);
+  }
+
+  static findById(...args) {
+    return isMock ? MockUserModel.findById(...args) : RealUser.findById(...args);
+  }
+
+  static findByIdAndUpdate(...args) {
+    return isMock ? MockUserModel.findByIdAndUpdate(...args) : RealUser.findByIdAndUpdate(...args);
+  }
+
+  static findByIdAndDelete(...args) {
+    return isMock ? MockUserModel.findByIdAndDelete(...args) : RealUser.findByIdAndDelete(...args);
+  }
+}
+
 const connection = {
   db: {
     collection: (name) => {
@@ -419,6 +536,7 @@ module.exports = {
   Customer,
   Accessory,
   AccessorySale,
+  User,
   connection,
   isMockDatabase: () => isMock
 };

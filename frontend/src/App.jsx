@@ -12,6 +12,8 @@ import FilterPanel from './components/FilterPanel';
 import MobileDetailModal from './components/MobileDetailModal';
 import AccessoriesPOS from './components/AccessoriesPOS';
 import LoginPage from './components/LoginPage';
+import SellersManager from './components/SellersManager';
+import ChangePasswordModal from './components/ChangePasswordModal';
 import { API_URL } from './config';
 
 function App() {
@@ -25,7 +27,8 @@ function App() {
     return null;
   });
 
-  const [activeTab, setActiveTab] = useState('inventory'); // 'inventory' | 'ledger' | 'dashboard'
+  const [activeTab, setActiveTab] = useState('inventory'); // 'inventory' | 'ledger' | 'dashboard' | 'sellers'
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [mobiles, setMobiles] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -341,17 +344,19 @@ function App() {
             <span className="font-label-md text-label-md">Inventory</span>
           </button>
           
-          <button 
-            onClick={() => setActiveTab('ledger')}
-            className={`w-full flex items-center gap-md px-lg py-md transition-all duration-200 text-left border-r-4 outline-none cursor-pointer ${
-              activeTab === 'ledger' 
-                ? 'bg-primary-container/20 text-primary border-primary active-nav-glow' 
-                : 'text-on-surface-variant hover:text-on-surface hover:bg-white/5 border-transparent'
-            }`}
-          >
-            <span className="material-symbols-outlined">menu_book</span>
-            <span className="font-label-md text-label-md">Ledger</span>
-          </button>
+          {user.role === 'admin' && (
+            <button 
+              onClick={() => setActiveTab('ledger')}
+              className={`w-full flex items-center gap-md px-lg py-md transition-all duration-200 text-left border-r-4 outline-none cursor-pointer ${
+                activeTab === 'ledger' 
+                  ? 'bg-primary-container/20 text-primary border-primary active-nav-glow' 
+                  : 'text-on-surface-variant hover:text-on-surface hover:bg-white/5 border-transparent'
+              }`}
+            >
+              <span className="material-symbols-outlined">menu_book</span>
+              <span className="font-label-md text-label-md">Ledger</span>
+            </button>
+          )}
 
           <button 
             onClick={() => setActiveTab('accessories')}
@@ -365,17 +370,33 @@ function App() {
             <span className="font-label-md text-label-md">Accessories</span>
           </button>
           
-          <button 
-            onClick={() => setActiveTab('dashboard')}
-            className={`w-full flex items-center gap-md px-lg py-md transition-all duration-200 text-left border-r-4 outline-none cursor-pointer ${
-              activeTab === 'dashboard' 
-                ? 'bg-primary-container/20 text-primary border-primary active-nav-glow' 
-                : 'text-on-surface-variant hover:text-on-surface hover:bg-white/5 border-transparent'
-            }`}
-          >
-            <span className="material-symbols-outlined">analytics</span>
-            <span className="font-label-md text-label-md">Analytics</span>
-          </button>
+          {user.role === 'admin' && (
+            <button 
+              onClick={() => setActiveTab('dashboard')}
+              className={`w-full flex items-center gap-md px-lg py-md transition-all duration-200 text-left border-r-4 outline-none cursor-pointer ${
+                activeTab === 'dashboard' 
+                  ? 'bg-primary-container/20 text-primary border-primary active-nav-glow' 
+                  : 'text-on-surface-variant hover:text-on-surface hover:bg-white/5 border-transparent'
+              }`}
+            >
+              <span className="material-symbols-outlined">analytics</span>
+              <span className="font-label-md text-label-md">Analytics</span>
+            </button>
+          )}
+
+          {user.role === 'admin' && (
+            <button 
+              onClick={() => setActiveTab('sellers')}
+              className={`w-full flex items-center gap-md px-lg py-md transition-all duration-200 text-left border-r-4 outline-none cursor-pointer ${
+                activeTab === 'sellers' 
+                  ? 'bg-primary-container/20 text-primary border-primary active-nav-glow' 
+                  : 'text-on-surface-variant hover:text-on-surface hover:bg-white/5 border-transparent'
+              }`}
+            >
+              <span className="material-symbols-outlined">group</span>
+              <span className="font-label-md text-label-md">Sellers</span>
+            </button>
+          )}
         </nav>
 
         <div className="px-lg mt-auto">
@@ -448,15 +469,19 @@ function App() {
               <span className="material-symbols-outlined">notifications</span>
             </button>
             <div className="hidden md:block h-8 w-[1px] bg-white/10 mx-2"></div>
-            <div className="flex items-center gap-sm cursor-pointer hover:opacity-85 transition-opacity">
+            <div 
+              onClick={() => setShowChangePasswordModal(true)}
+              className="flex items-center gap-sm cursor-pointer hover:opacity-85 transition-opacity"
+              title="Change Password"
+            >
               <img 
                 className="w-8 h-8 md:w-9 md:h-9 rounded-full border border-primary/30 object-cover" 
-                alt="Admin Profile"
+                alt="Profile"
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgVFJndywTO5LzqtxfdhCtt9m0g1jdRMOicEbB1geas7tg5v55403QR0krnObf5PIQwHTr5XSKPrhQhPCvzuiGUOMIrPMuHyLsrw9EzjgpIbq_FM2rHa981zksLIxffSDgBoCHt73x3WogkRzSLOA6HNSIEFXgTZQAkMdVYwZAfT_EG2_GbWLOk-XPMt6Is397eHeuZLfZ-YebkAQlKCJTzzqRXjFSd8-6g2i9xeu15ErVDaf9wgchxPeWrTrov0ZuJT10Tr0IvYY"
               />
               <div className="hidden xl:block text-left">
-                <p className="font-label-md text-on-surface leading-none text-xs">Admin Profile</p>
-                <p className="text-[10px] text-on-surface-variant uppercase tracking-tighter mt-0.5">Chief Executive</p>
+                <p className="font-label-md text-on-surface leading-none text-xs">{user.role === 'admin' ? 'Admin Profile' : `@${user.username}`}</p>
+                <p className="text-[10px] text-on-surface-variant uppercase tracking-tighter mt-0.5">{user.role === 'admin' ? 'Chief Executive' : 'Sales Seller'}</p>
               </div>
             </div>
             <div className="h-8 w-[1px] bg-white/10 mx-1"></div>
@@ -520,6 +545,8 @@ function App() {
                 }}
               />
             </div>
+          ) : activeTab === 'sellers' ? (
+            <SellersManager user={user} />
           ) : (
           <div className="px-4 md:px-margin-desktop py-4 md:py-xl overflow-y-auto h-full custom-scrollbar">
             {activeTab === 'inventory' ? (
@@ -668,25 +695,41 @@ function App() {
           <span className="text-[10px] font-semibold">Accessories</span>
         </button>
 
-        <button
-          onClick={() => setActiveTab('ledger')}
-          className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all cursor-pointer ${
-            activeTab === 'ledger' ? 'text-primary' : 'text-on-surface-variant'
-          }`}
-        >
-          <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: activeTab === 'ledger' ? "'FILL' 1" : "'FILL' 0" }}>menu_book</span>
-          <span className="text-[10px] font-semibold">Ledger</span>
-        </button>
+        {user.role === 'admin' && (
+          <button
+            onClick={() => setActiveTab('ledger')}
+            className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all cursor-pointer ${
+              activeTab === 'ledger' ? 'text-primary' : 'text-on-surface-variant'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: activeTab === 'ledger' ? "'FILL' 1" : "'FILL' 0" }}>menu_book</span>
+            <span className="text-[10px] font-semibold">Ledger</span>
+          </button>
+        )}
 
-        <button
-          onClick={() => setActiveTab('dashboard')}
-          className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all cursor-pointer ${
-            activeTab === 'dashboard' ? 'text-primary' : 'text-on-surface-variant'
-          }`}
-        >
-          <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: activeTab === 'dashboard' ? "'FILL' 1" : "'FILL' 0" }}>analytics</span>
-          <span className="text-[10px] font-semibold">Analytics</span>
-        </button>
+        {user.role === 'admin' && (
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all cursor-pointer ${
+              activeTab === 'dashboard' ? 'text-primary' : 'text-on-surface-variant'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: activeTab === 'dashboard' ? "'FILL' 1" : "'FILL' 0" }}>analytics</span>
+            <span className="text-[10px] font-semibold">Analytics</span>
+          </button>
+        )}
+
+        {user.role === 'admin' && (
+          <button
+            onClick={() => setActiveTab('sellers')}
+            className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl transition-all cursor-pointer ${
+              activeTab === 'sellers' ? 'text-primary' : 'text-on-surface-variant'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: activeTab === 'sellers' ? "'FILL' 1" : "'FILL' 0" }}>group</span>
+            <span className="text-[10px] font-semibold">Sellers</span>
+          </button>
+        )}
       </nav>
 
       {/* ===== MODALS ===== */}
@@ -714,6 +757,12 @@ function App() {
             setMobiles(mobiles.map(m => m._id === updatedMobile._id ? updatedMobile : m));
             setDetailMobile(null);
           }}
+        />
+      )}
+      {showChangePasswordModal && (
+        <ChangePasswordModal 
+          user={user} 
+          onClose={() => setShowChangePasswordModal(false)} 
         />
       )}
     </div>

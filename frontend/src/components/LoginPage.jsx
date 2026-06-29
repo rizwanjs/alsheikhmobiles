@@ -30,14 +30,25 @@ export default function LoginPage({ onLogin }) {
     } catch (err) {
       // Fallback if backend server is offline or unreachable (e.g. running on Vercel without hosted backend)
       const isNetworkError = !err.response || err.code === 'ERR_NETWORK' || err.message === 'Network Error';
-      const fallbackUsername = 'admin';
-      const fallbackPassword = 'AlSheikh@2024';
+      const lowercaseUsername = username.trim().toLowerCase();
+      
+      // Check mock logins (newly created sellers in Vercel/demo mode) from localStorage
+      const mockLogins = JSON.parse(localStorage.getItem('als_mock_logins') || '{}');
+      let authenticatedUser = null;
 
-      if (isNetworkError && username === fallbackUsername && password === fallbackPassword) {
+      if (isNetworkError) {
+        if (lowercaseUsername === 'admin' && password === 'AlSheikh@2024') {
+          authenticatedUser = { username: 'admin', role: 'admin' };
+        } else if (mockLogins[lowercaseUsername] && mockLogins[lowercaseUsername] === password.trim()) {
+          authenticatedUser = { username: username.trim(), role: 'seller' };
+        }
+      }
+
+      if (authenticatedUser) {
         const dummyToken = 'mock-jwt-token-for-vercel-demo';
         localStorage.setItem('als_token', dummyToken);
-        localStorage.setItem('als_user', JSON.stringify({ username: 'admin', role: 'admin' }));
-        onLogin({ token: dummyToken, username: 'admin', role: 'admin' });
+        localStorage.setItem('als_user', JSON.stringify(authenticatedUser));
+        onLogin({ token: dummyToken, username: authenticatedUser.username, role: authenticatedUser.role });
         return;
       }
       setError(err.response?.data?.message || 'Login failed. Check your credentials.');

@@ -3,7 +3,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-const { connectDB, Mobile, Customer, Accessory, AccessorySale } = require('./db');
+const { connectDB, Mobile, Customer, Accessory, AccessorySale, User } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -33,20 +33,35 @@ connectDB(MONGODB_URI);
 
 // --- Auth ---
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
-  const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'AlSheikh@2024';
 
-  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-    const token = jwt.sign(
-      { username, role: 'admin' },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-    return res.json({ token, username, role: 'admin' });
+  try {
+    const user = await User.findOne({ username });
+    if (user && user.password === password) {
+      const token = jwt.sign(
+        { id: user._id, username: user.username, role: user.role },
+        JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+      return res.json({ token, username: user.username, role: user.role });
+    }
+    
+    // In mock mode or initial setup, if User table search failed to find anything
+    // and username is admin, use the fallback credentials
+    if (username === 'admin' && password === 'AlSheikh@2024') {
+      const token = jwt.sign(
+        { id: 'mock-admin', username: 'admin', role: 'admin' },
+        JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+      return res.json({ token, username: 'admin', role: 'admin' });
+    }
+
+    return res.status(401).json({ message: 'Invalid username or password' });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
-  return res.status(401).json({ message: 'Invalid username or password' });
 });
 
 // Protect all routes below this middleware
@@ -54,6 +69,91 @@ app.use(authMiddleware);
 
 app.get('/api/auth/verify', (req, res) => {
   res.json({ valid: true, user: req.user });
+});
+
+// --- User Management (Admins Only) ---
+
+app.get('/api/users/sellers', async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied. Admins only.' });
+  }
+  try {
+    const sellers = await User.find();
+    // Filter to only return sellers
+    const filtered = sellers.filter(u => u.role === 'seller');
+    res.json(filtered);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post('/api/users/sellers', async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied. Admins only.' });
+  }
+  const { username, password } = req.body;
+  try {
+    const existing = await User.findOne({ username });
+    if (existing) {
+      return res.status(400).json({ message: 'Username is already taken.' });
+    }
+    const seller = new User({ username, password, role: 'seller' });
+    await seller.save();
+    res.status(201).json({ _id: seller._id, username: seller.username, role: seller.role });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.delete('/api/users/sellers/:id', async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied. Admins only.' });
+  }
+  try {
+    const deleted = await User.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'User not found.' });
+    res.json({ message: 'Seller deleted successfully.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post('/api/users/change-password', async (req, res) => {
+  const { userId, newPassword } = req.body;
+  
+  // Requester must be admin OR changing their own password
+  if (req.user.role !== 'admin' && req.user.id !== userId) {
+    // If the token id is missing (e.g. from previous hardcoded token), match by username
+    if (req.user.username !== 'admin') {
+      return res.status(403).json({ message: 'Access denied.' });
+    }
+  }
+  
+  try {
+    // Find the user to update
+    let user;
+    if (userId) {
+      user = await User.findByIdAndUpdate(userId, { password: newPassword });
+    } else {
+      // Fallback: If no userId (e.g. legacy local admin), find by current token username
+      const existing = await User.findOne({ username: req.user.username });
+      if (existing) {
+        existing.password = newPassword;
+        await existing.save();
+        user = existing;
+      } else {
+        // Create new user record if they didn't exist in DB
+        const newUser = new User({ username: req.user.username, password: newPassword, role: req.user.role });
+        await newUser.save();
+        user = newUser;
+      }
+    }
+    
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    res.json({ message: 'Password updated successfully.' });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 });
 
 // --- Mobiles ---
