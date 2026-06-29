@@ -1,5 +1,9 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/container-queries";
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Global overrides */
 body {
