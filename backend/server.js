@@ -1,60 +1,21 @@
 const express = require('express');
 const cors = require('cors');
-const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const { connectDB, Mobile, Customer, Accessory, AccessorySale } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || 'alsheikh-fallback-secret';
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-// Auth middleware
-const authMiddleware = (req, res, next) => {
-  const token = req.headers['authorization']?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'No token provided' });
-  try {
-    req.user = jwt.verify(token, JWT_SECRET);
-    next();
-  } catch {
-    return res.status(401).json({ message: 'Invalid or expired token' });
-  }
-};
 
 // Connect to MongoDB (or local JSON fallback)
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/alsheikh_mobiles';
 connectDB(MONGODB_URI);
 
 // Routes
-
-// --- Auth ---
-
-app.post('/api/auth/login', (req, res) => {
-  const { username, password } = req.body;
-  const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'AlSheikh@2024';
-
-  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-    const token = jwt.sign(
-      { username, role: 'admin' },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-    return res.json({ token, username, role: 'admin' });
-  }
-  return res.status(401).json({ message: 'Invalid username or password' });
-});
-
-// Protect all routes below this middleware
-app.use(authMiddleware);
-
-app.get('/api/auth/verify', (req, res) => {
-  res.json({ valid: true, user: req.user });
-});
 
 // --- Mobiles ---
 
