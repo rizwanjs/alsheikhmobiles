@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -11,9 +11,20 @@ import DashboardView from './components/DashboardView';
 import FilterPanel from './components/FilterPanel';
 import MobileDetailModal from './components/MobileDetailModal';
 import AccessoriesPOS from './components/AccessoriesPOS';
+import LoginPage from './components/LoginPage';
 import { API_URL } from './config';
 
 function App() {
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem('als_user');
+    const storedToken = localStorage.getItem('als_token');
+    if (storedUser && storedToken) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+      return JSON.parse(storedUser);
+    }
+    return null;
+  });
+
   const [activeTab, setActiveTab] = useState('inventory'); // 'inventory' | 'ledger' | 'dashboard'
   const [mobiles, setMobiles] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -33,7 +44,32 @@ function App() {
   });
   const filterBtnRef = useRef(null);
 
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('als_token');
+    localStorage.removeItem('als_user');
+    delete axios.defaults.headers.common['Authorization'];
+    setUser(null);
+  }, []);
+
+  const handleLogin = (userData) => {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${userData.token}`;
+    setUser({ username: userData.username, role: userData.role });
+  };
+
   useEffect(() => {
+    const token = localStorage.getItem('als_token');
+    if (token) {
+      axios.get(`${API_URL}/api/auth/verify`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .catch(() => {
+        handleLogout();
+      });
+    }
+  }, [handleLogout]);
+
+  useEffect(() => {
+    if (!user) return;
     setLoading(true);
     // Fetch from backend or fall back to demo data
     axios.get(`${API_URL}/api/mobiles`)
@@ -44,7 +80,7 @@ function App() {
     axios.get(`${API_URL}/api/customers`)
       .then(res => setCustomers(res.data))
       .catch(() => generateDemoCustomers());
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function generateDemoMobiles() {
     const demoMobiles = [];
@@ -268,6 +304,15 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
+  if (!user) {
+    return (
+      <>
+        <ToastContainer theme="dark" position="bottom-right" />
+        <LoginPage onLogin={handleLogin} />
+      </>
+    );
+  }
+
   return (
     <div className="flex bg-background min-h-screen text-on-surface select-none">
       <ToastContainer theme="dark" position="bottom-right" />
@@ -342,7 +387,15 @@ function App() {
               <span className="material-symbols-outlined text-[14px]">sensors</span>
               System Live
             </span>
+            <span className="text-[10px] text-on-surface-variant italic">@{user.username}</span>
           </div>
+          <button 
+            onClick={handleLogout}
+            className="w-full bg-error/10 hover:bg-error/20 text-error py-2 rounded-xl text-xs font-bold active:scale-[0.98] transition-transform flex items-center justify-center gap-2 cursor-pointer border border-error/20"
+          >
+            <span className="material-symbols-outlined text-[16px]">logout</span>
+            Logout
+          </button>
         </div>
       </aside>
 
@@ -403,6 +456,13 @@ function App() {
               </div>
             </div>
             <div className="h-8 w-[1px] bg-white/10 mx-1"></div>
+            <button 
+              onClick={handleLogout}
+              className="hover:bg-error/10 hover:text-error rounded-full p-2 text-on-surface-variant transition-colors cursor-pointer flex items-center justify-center"
+              title="Logout"
+            >
+              <span className="material-symbols-outlined text-[20px]">logout</span>
+            </button>
           </div>
         </header>
 
